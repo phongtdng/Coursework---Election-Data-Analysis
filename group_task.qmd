@@ -1,0 +1,36 @@
+---
+title: "Group Task"
+author: "Phong Duong"
+format:
+  html:
+    theme: [style.scss]
+    toc: true
+    toc-location: right
+    toc-title: Índice
+editor: visual
+---
+
+# Required packages
+
+> Insert in the lower chunk the packages you will need
+
+```{r}
+rm(list = ls()) 
+library(tidyverse)
+library(dbplyr)
+library(RSQLite)
+library(DBI)
+```
+
+# Data
+
+```{r}
+db <- DBI::dbConnect(SQLite(), "database.sqlite", extended_types = T)
+dbListTables(db)
+
+df <- tbl(db, "election_data") %>% 
+  left_join(tbl(db, "cod_mun"), by = "cod_mun") %>% 
+  left_join(tbl(db, "abbrev"), by = join_by("party" == "denominacion")) %>% 
+  left_join(tbl(db, "surveys"), by = "siglas") 
+head(df, n = 10)
+```
