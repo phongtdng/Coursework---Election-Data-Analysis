@@ -22,9 +22,9 @@ surveys_df <- surveys %>%
          field_date_from = as.character(field_date_from),
          field_date_to = as.character(field_date_to)) 
 
-#Migate data to sqlite database
+#Migrate data to sqlite database
 db_file <- "database.sqlite"
-db <- src_sqlite(db_file, create = TRUE)
+db <- src_sqlite(db_file, create = TRUE) #Create database
 
 dbWriteTable(db, "election_data", election_df)
 dbWriteTable(db, "cod_mun", cod_mun)
