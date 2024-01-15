@@ -17,7 +17,10 @@ election_df <- election_data %>%
 
 #Pivoted surveys table name: surveys
 surveys_df <- surveys %>% 
-  pivot_longer(cols = !type_survey:turnout, names_to = 'siglas', values_to = 'estimated_voting_intention')
+  pivot_longer(cols = !type_survey:turnout, names_to = 'siglas', values_to = 'estimated_voting_intention') %>% 
+  mutate(date_elec = as.character(date_elec),
+         field_date_from = as.character(field_date_from),
+         field_date_to = as.character(field_date_to)) 
 
 #Migate data to sqlite database
 db_file <- "database.sqlite"
