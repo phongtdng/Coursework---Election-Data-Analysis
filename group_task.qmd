@@ -32,7 +32,8 @@ dbListTables(db)
 # Data Processing
 
 ```{r}
-
+tbl(db, "election_data") %>% 
+  head(n = 50)
 ```
 
 # Questions
