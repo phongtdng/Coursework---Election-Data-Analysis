@@ -20,8 +20,8 @@ election_df <- election_data %>%
 #Municipal population table
 municipal_population <- election_data %>% 
   mutate(cod_mun = paste(codigo_ccaa, codigo_provincia, codigo_municipio, sep = "-"), .after = codigo_municipio) %>% 
-  select(anno, cod_mun, censo) %>% 
-  summarise(sum(censo), .by = c(cod_mun, anno)) %>% 
+  select(anno, mes, cod_mun, censo) %>% 
+  summarise(sum(censo), .by = c(cod_mun, anno, mes)) %>% 
   rename('censo_total' = 'sum(censo)')
 
 #Pivoted surveys table name: surveys
@@ -37,7 +37,7 @@ src_sqlite(db_file, create = TRUE) #Create database
 db <- DBI::dbConnect(SQLite(), "database.sqlite", extended_types = T) #Connect to sqlite database
 
 dbWriteTable(db, "election_data", election_df)
-dbWriteTable(db, "municipal_population", municipal_population)
+dbWriteTable(db, "municipal_population", municipal_population, overwrite = T)
 dbWriteTable(db, "cod_mun", cod_mun)
 dbWriteTable(db, "surveys", surveys_df, field.types = c(date_elec = "Date", field_date_from ="Date", field_date_to = "Date"))
 dbWriteTable(db, "abbrev", abbrev)
