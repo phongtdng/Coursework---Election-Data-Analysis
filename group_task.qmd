@@ -40,7 +40,26 @@ dbListTables(db)
 1.  How is the vote of national parties (PSOE, PP, VOX, CS, MP, UP - IU) distributed against regional or nationalist parties?
 
 ```{r}
+q1_df <- tbl(db, "election_data") %>% 
+  select(cod_mun, anno, mes, party, vote_count) %>% 
+  left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>% 
+  mutate(nat_reg = ifelse(siglas_2 %in% c('PSOE', 'PP','VOX', 'CS', 'MP', 'UP-IU'),'national', 'regional'))
+q1_df %>% filter(is.na(siglas))
+```
 
+```{r}
+#Create a table in sql db for faster data retrieval
+vote_sum_year <- q1_df %>% 
+  group_by(nat_reg, anno) %>% 
+  summarise(vote_total = sum(vote_count)) 
+compute(vote_sum_year, temporary = FALSE, name='vote_sum_year')
+```
+
+```{r}
+plot1_data <- tbl(db, "vote_sum_year") 
+ggplot(plot1_data) +
+  geom_col(aes(x = anno, y = vote_total, fill = nat_reg), position = position_dodge2()) +
+  scale_x_discrete(limits = c(2008,2011,2015,2016,2019))
 ```
 
 2.  Which party was the winner in the municipalities with more than 100,000 habitants (census) in each of the elections?
