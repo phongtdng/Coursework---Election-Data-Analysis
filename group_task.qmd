@@ -20,6 +20,8 @@ library(tidyverse)
 library(dbplyr)
 library(RSQLite)
 library(DBI)
+library(lubridate)
+library(scales)
 ```
 
 # Data
@@ -40,13 +42,40 @@ dbListTables(db)
 1.  How is the vote of national parties (PSOE, PP, VOX, CS, MP, UP - IU) distributed against regional or nationalist parties?
 
 ```{r}
+q1_df <- tbl(db, "election_data_2") %>% 
+  select(cod_mun, elec_date, party, vote_count) %>% 
+  left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>% 
+  mutate(nat_reg = ifelse(siglas_2 %in% c('PSOE', 'PP','VOX', 'CS', 'MP', 'UP-IU'),'national', 'regional'))
+```
 
+```{r}
+#Create a table in sql db for faster data retrieval
+vote_sum <- q1_df %>% 
+  group_by(nat_reg, elec_date) %>% 
+  summarise(vote_total = sum(vote_count)) 
+vote_sum %>% head()
+compute(vote_sum, temporary = FALSE, name='vote_sum')
+tbl(db, "vote_sum")
+```
+
+```{r}
+plot1_data <- tbl(db, "vote_sum") 
+ggplot(plot1_data) +
+  geom_col(aes(x = elec_date, y = vote_total/10^6, fill = nat_reg), position = position_dodge2()) +
+  labs(y = "Total votes (in millions)")
 ```
 
 2.  Which party was the winner in the municipalities with more than 100,000 habitants (census) in each of the elections?
 
 ```{r}
-
+tbl(db, "election_data") %>% 
+  select(-tipo_eleccion, -vuelta, -codigo_distrito_electoral) %>% 
+  mutate(date = as.Date(paste(anno, mes, '01', sep = '-'))) %>% 
+  select(-mes, -anno, -codigo_ccaa, -codigo_provincia, -codigo_municipio) %>% 
+  group_by(date, cod_mun) %>% 
+  mutate(valid_votes = sum(vote_count) + votos_blancos,
+         percent = vote_count/ valid_votes * 100) %>% 
+  head()
 ```
 
 3.  Which party was the second when the first was the PSOE? And when the first was the PP?
