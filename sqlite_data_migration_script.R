@@ -14,8 +14,9 @@ abbrev <- read_csv(file = "./data/siglas.csv")
 #Pivoted election_data table name: election_data
 election_df <- election_data %>% 
   pivot_longer(cols = !tipo_eleccion:votos_candidaturas, names_to = 'party', values_to = 'vote_count') %>% 
+  select(-tipo_eleccion, -vuelta, -codigo_distrito_electoral) %>% #column with 0 variance
   mutate(vote_count = replace_na(vote_count, 0),
-         cod_mun = paste(codigo_ccaa, codigo_provincia, codigo_municipio, sep = "-"), .after = codigo_municipio)
+         cod_mun = paste(codigo_ccaa, codigo_provincia, codigo_municipio, sep = "-"), .after = codigo_municipio) 
 
 #Municipal population table
 municipal_population <- election_data %>% 
@@ -36,7 +37,7 @@ db_file <- "database.sqlite"
 src_sqlite(db_file, create = TRUE) #Create database
 db <- DBI::dbConnect(SQLite(), "database.sqlite", extended_types = T) #Connect to sqlite database
 
-dbWriteTable(db, "election_data", election_df)
+dbWriteTable(db, "election_data", election_df, field.types = c(anno = "Int"), overwrite = T)
 dbWriteTable(db, "municipal_population", municipal_population, overwrite = T)
 dbWriteTable(db, "cod_mun", cod_mun)
 dbWriteTable(db, "surveys", surveys_df, field.types = c(date_elec = "Date", field_date_from ="Date", field_date_to = "Date"))
