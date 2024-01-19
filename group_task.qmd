@@ -68,14 +68,58 @@ ggplot(plot1_data) +
 2.  Which party was the winner in the municipalities with more than 100,000 habitants (census) in each of the elections?
 
 ```{r}
-tbl(db, "election_data") %>% 
-  select(-tipo_eleccion, -vuelta, -codigo_distrito_electoral) %>% 
-  mutate(date = as.Date(paste(anno, mes, '01', sep = '-'))) %>% 
-  select(-mes, -anno, -codigo_ccaa, -codigo_provincia, -codigo_municipio) %>% 
-  group_by(date, cod_mun) %>% 
+vote_full <- tbl(db, "election_data_2") %>% 
+  group_by(elec_date, cod_mun) %>% 
   mutate(valid_votes = sum(vote_count) + votos_blancos,
          percent = vote_count/ valid_votes * 100) %>% 
-  head()
+  select(elec_date, cod_mun, party, vote_count, valid_votes, percent)
+vote_full %>% head()
+compute(vote_full, temporary = FALSE, name = "vote_full")
+```
+
+```{r}
+mun_pop_2 <- tbl(db, "municipal_population") %>% 
+  mutate(date = paste(as.integer(anno), mes, "01", sep = "-" )) %>% 
+  select(-anno, -mes)
+
+winner_100k <- tbl(db, "vote_full") %>% 
+  left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
+  filter(censo_total > 100000) %>% 
+  group_by(elec_date, cod_mun) %>% 
+  filter(percent == max(percent)) 
+```
+
+```{r}
+#2008
+winner_100k %>% filter(as.Date(elec_date) == 2008) %>%
+  group_by(party) %>% 
+  summarise(wins = count()) %>% 
+  arrange(desc(wins))
+
+#2011
+winner_100k %>% filter(as.Date(elec_date) == 2011) %>%
+  group_by(party) %>% 
+  summarise(wins = count()) %>% 
+  arrange(desc(wins))
+
+#2015
+winner_100k %>% filter(as.Date(elec_date) == 2015) %>%
+  group_by(party) %>% 
+  summarise(wins = count()) %>% 
+  arrange(desc(wins))
+
+#2019-1
+winner_100k %>% filter(elec_date == "2019-04-01") %>%
+  group_by(party) %>% 
+  summarise(wins = count()) %>% 
+  arrange(desc(wins))
+
+#2019-2
+winner_100k %>% filter(elec_date == "2019-11-01") %>%
+  group_by(party) %>% 
+  summarise(wins = count()) %>% 
+  arrange(desc(wins))
+
 ```
 
 3.  Which party was the second when the first was the PSOE? And when the first was the PP?
