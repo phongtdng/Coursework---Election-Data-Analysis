@@ -122,6 +122,20 @@ winner_100k %>% filter(elec_date == "2019-11-01") %>%
 
 ```
 
+```{r}
+winner_100k_summary <- winner_100k %>% 
+  group_by(elec_date, party) %>% 
+  summarise(wins = count()) %>% 
+  filter(wins == max(wins)) %>% 
+  left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>% 
+  collect() 
+
+ggplot(winner_100k_summary) +
+  geom_col(aes(x= elec_date, y = wins, fill = siglas_2)) +
+  geom_text(aes(x = elec_date, y = wins,label = siglas_2), nudge_y = 1) +
+  theme(legend.position = "none") 
+```
+
 3.  Which party was the second when the first was the PSOE? And when the first was the PP?
 
 ```{r}
