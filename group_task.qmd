@@ -95,6 +95,30 @@ winner_100k %>% filter(as.Date(elec_date) == 2008) %>%
   group_by(party) %>% 
   summarise(wins = count()) %>% 
   arrange(desc(wins))
+
+#2011
+winner_100k %>% filter(as.Date(elec_date) == 2011) %>%
+  group_by(party) %>% 
+  summarise(wins = count()) %>% 
+  arrange(desc(wins))
+
+#2015
+winner_100k %>% filter(as.Date(elec_date) == 2015) %>%
+  group_by(party) %>% 
+  summarise(wins = count()) %>% 
+  arrange(desc(wins))
+
+#2019-1
+winner_100k %>% filter(elec_date == "2019-04-01") %>%
+  group_by(party) %>% 
+  summarise(wins = count()) %>% 
+  arrange(desc(wins))
+
+#2019-2
+winner_100k %>% filter(elec_date == "2019-11-01") %>%
+  group_by(party) %>% 
+  summarise(wins = count()) %>% 
+  arrange(desc(wins))
 ```
 
 3.  Which party was the second when the first was the PSOE? And when the first was the PP?
