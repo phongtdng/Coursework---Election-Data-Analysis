@@ -1,0 +1,49 @@
+-- Filtered surveys table for ease of querying
+CREATE TABLE surveys_new AS
+SELECT *
+FROM surveys
+WHERE date_elec >= '2018-01-01'
+ AND exit_poll = 0
+ AND size >= 750
+ AND JULIANDAY(field_date_to) - JULIANDAY(field_date_from) > 1;
+
+--Add missing parties in abbrev table 
+INSERT INTO abbrev(denominacion)
+SELECT DISTINCT party
+FROM election_data 
+WHERE party NOT IN (SELECT denominacion FROM abbrev);
+ 
+-- Processed party names and abbreviation
+CREATE TABLE abbrev_2 AS
+SELECT DISTINCT denominacion,
+    CASE 
+        WHEN siglas LIKE '%PSOE%' OR siglas LIKE 'P.S.O.E.' OR denominacion LIKE '%PSOE%' THEN "PSOE"
+        WHEN siglas LIKE '%P.P.%' OR denominacion LIKE '%PARTIDO POPULAR%' THEN 'PP'
+        WHEN denominacion LIKE '%PARTIDO DE LA CIUDADAN_A%'  THEN "CS"
+        WHEN denominacion LIKE '%VASCO%' THEN 'EAJ'
+        WHEN denominacion LIKE '%NACIONALISTA GALEGO%' THEN 'BNG'
+        WHEN siglas LIKE '%COMPRO%' THEN 'COM'
+        WHEN denominacion LIKE '%UNIÓ' OR siglas = 'CIU' THEN 'CIU'
+        WHEN denominacion LIKE '%ESQUERRA REPUBLICANA%' AND denominacion NOT LIKE '%VALENCI%' THEN 'ERC'
+        WHEN denominacion LIKE '%BILDU%'  OR denominacion LIKE '%Aralar%' OR denominacion LIKE '%Eusko%' THEN 'EH-BILDU'
+        WHEN denominacion LIKE '%los verdes%' OR denominacion LIKE '%podem%' OR denominacion LIKE '%ezker batua%' OR denominacion LIKE '%IZQUIERDA UNIDA%' THEN 'UP-IU'
+        WHEN denominacion LIKE '%MÁS PAÍS%' THEN'MP'
+        WHEN denominacion LIKE '%VOX%' THEN 'VOX'
+        ELSE 'OTHER'
+    END AS siglas_2
+FROM abbrev;
+
+--New election data filtered and processed date
+CREATE TABLE election_data_2 AS
+SELECT 
+    (anno || '-' || mes || '-' || '01') AS elec_date,
+    cod_mun,
+    numero_mesas,
+    participacion_1,
+    participacion_2,
+    votos_blancos,
+    votos_nulos,
+    votos_candidaturas,
+    party,
+    vote_count
+FROM election_data;
