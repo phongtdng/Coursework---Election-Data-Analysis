@@ -80,7 +80,7 @@ compute(vote_full, temporary = FALSE, name = "vote_full")
 ```{r}
 mun_pop_2 <- tbl(db, "municipal_population") %>% 
   mutate(date = paste(as.integer(anno), mes, "01", sep = "-" )) %>% 
-  select(-anno, -mes)
+  select(-anno, -mes) 
 
 winner_100k <- tbl(db, "vote_full") %>% 
   left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
@@ -224,8 +224,41 @@ first_second %>%
 5.  How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
 
 ```{r}
+q5_df <- tbl(db, "vote_full") %>% 
+  left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>%
+  filter(siglas_2 != "OTHER") %>% 
+  left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
+  select(elec_date, cod_mun, censo_total, party, siglas_2, vote_count, valid_votes) %>% collect()
 
+cor(q5_df$censo_total, q5_df$valid_votes)
+```
 
+```{r}
+#Vote data frame of interested parties and in rural area (population <= 5000)
+#Criteria for rural based on DEMOGRAFÍA DE LA POBLACIÓN RURAL en 2020
+rural_winners <- tbl(db, "vote_full") %>% 
+  left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>% 
+  filter(siglas_2 != "OTHER") %>% 
+  left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>%
+  filter(censo_total <= 5000) %>% 
+  collect()
+
+#Winning times in rural zones per party per elections 
+rural_winners %>% 
+  group_by(elec_date, cod_mun) %>% 
+  filter(percent == max(percent)) %>% 
+  group_by(elec_date, siglas_2) %>% 
+  summarise(win_count = n()) %>% 
+  arrange(elec_date,desc(win_count))
+```
+
+```{r}
+#2008
+rural_winners %>% 
+  group_by(elec_date, cod_mun) %>% 
+  filter(percent == max(percent) & elec_date == "2008-03-01") %>% 
+  ggplot(aes(x = percent, fill = siglas_2)) +
+  geom_histogram()
 ```
 
 6.  How to calibrate the error of the polls (remember that the polls are voting intentions at national level)?
