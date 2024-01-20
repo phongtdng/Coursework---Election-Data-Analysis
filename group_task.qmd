@@ -73,7 +73,7 @@ vote_full <- tbl(db, "election_data_2") %>%
   mutate(valid_votes = sum(vote_count) + votos_blancos,
          percent = vote_count/ valid_votes * 100) %>% 
   select(elec_date, cod_mun, party, vote_count, valid_votes, percent)
-vote_full %>% head()
+
 compute(vote_full, temporary = FALSE, name = "vote_full")
 ```
 
