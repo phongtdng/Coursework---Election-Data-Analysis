@@ -218,7 +218,17 @@ first_second %>%
 4.  Who benefits from low turnout?
 
 ```{r}
-
+#Long run time, consider optimizing 
+tbl(db,"election_data_2") %>% 
+  left_join(tbl(db, "abbrev_2"),by = join_by("party" == "denominacion")) %>% 
+  left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
+  group_by(elec_date, cod_mun) %>% 
+  mutate(participation_pcg = participacion_2/censo_total * 100) %>% 
+  select(elec_date, cod_mun, party, siglas_2, participacion_2, vote_count, participation_pcg, censo_total) %>% 
+  filter(participation_pcg < 30) %>% 
+  arrange(participation_pcg) %>% 
+  filter(vote_count == max(vote_count)) %>% 
+  head()
 ```
 
 5.  How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
