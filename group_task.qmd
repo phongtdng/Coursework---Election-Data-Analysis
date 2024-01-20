@@ -139,7 +139,80 @@ ggplot(winner_100k_summary) +
 3.  Which party was the second when the first was the PSOE? And when the first was the PP?
 
 ```{r}
+first_second <- tbl(db, "vote_full") %>% 
+  left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
+  filter(censo_total > 100000) %>% 
+  relocate(censo_total, .after = cod_mun) %>% 
+  left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>% 
+  relocate(siglas_2, .after = party) %>% 
+  group_by(elec_date, cod_mun) %>% 
+  arrange(elec_date, cod_mun) %>% #Check if this necessary
+  slice_max(vote_count, n = 2) %>% 
+  collect()
+```
 
+```{r}
+#First is PSOE
+
+#Count how many times got second place
+first_second %>% 
+  filter(siglas_2[1] == "PSOE") %>% 
+  filter(siglas_2 != "PSOE") %>% ungroup() %>% 
+  select(elec_date, party, siglas_2, percent) %>% 
+  group_by(elec_date, siglas_2) %>% 
+  summarise(count = n()) %>% 
+  arrange(elec_date, desc(count))
+
+#Sum votes per election of second place party
+first_second %>% 
+  summarise(first = siglas_2[1],
+            second = siglas_2[2],
+            
+             votes_first = sum(vote_count[siglas_2 == first]),
+             votes_second = sum(vote_count[siglas_2 == second]),
+            .groups = 'drop' ) %>% 
+   
+  filter(first== "PSOE") %>% 
+  ungroup() %>% 
+   
+  group_by(elec_date, second, first) %>% 
+  summarise(count_second = sum(votes_second), 
+            count_first = sum(votes_first), 
+            .groups = 'drop') %>% 
+ group_by(elec_date) %>% 
+ filter(count_second == max(count_second))
+```
+
+```{r}
+#First is PP
+
+#Count how many times got second place
+first_second %>% 
+  filter(siglas_2[1] == "PP") %>% 
+  filter(siglas_2 != "PP") %>% ungroup() %>% 
+  select(elec_date, party, siglas_2, percent) %>% 
+  group_by(elec_date, siglas_2) %>% 
+  summarise(count = n()) %>% 
+  arrange(elec_date, desc(count))
+
+#Sum votes per election of second place party
+first_second %>% 
+  summarise(first = siglas_2[1],
+            second = siglas_2[2],
+            
+             votes_first = sum(vote_count[siglas_2 == first]),
+             votes_second = sum(vote_count[siglas_2 == second]),
+            .groups = 'drop' ) %>% 
+   
+  filter(first== "PP") %>% 
+  ungroup() %>% 
+   
+  group_by(elec_date, second, first) %>% 
+  summarise(count_second = sum(votes_second), 
+            count_first = sum(votes_first), 
+            .groups = 'drop') %>% 
+ group_by(elec_date) %>% 
+ filter(count_second == max(count_second))
 ```
 
 4.  Who benefits from low turnout?
@@ -151,6 +224,7 @@ ggplot(winner_100k_summary) +
 5.  How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
 
 ```{r}
+
 
 ```
 
