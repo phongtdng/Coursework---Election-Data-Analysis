@@ -36,7 +36,7 @@ library(glue)
 
 # About the data
 
-## Data Original{visibility="hidden"}
+## Data Original {visibility="hidden"}
 
 ```{r}
 if(!file.exists("database.sqlite")) {
@@ -121,6 +121,8 @@ if(!file.exists("database.sqlite")) {
       cod_mun,numero_mesas, participacion_1, participacion_2,
       votos_blancos, votos_nulos, votos_candidaturas, party, vote_count
   FROM election_data;")
+  
+  rm(list=ls())
 }
 ```
 
