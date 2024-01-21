@@ -20,6 +20,7 @@ library(RSQLite)
 library(DBI)
 library(lubridate)
 library(scales)
+#fakelibrary
 ```
 
 # About the data
@@ -78,7 +79,6 @@ tbl(db, "vote_sum") %>% collect() %>% tibble()
 :::
 
 National parities largely outweigh regional parties in votes. It is interesting, however, that in some elections there was a surge in votes for regional parties (e.g. in 2011) so there might be interesting events happening in between the election and the former.
-
 :::
 
 ## Winner in big municipalities
@@ -161,7 +161,8 @@ ggplot(winner_100k_summary) +
   geom_text(aes(x = elec_date, y = wins,label = siglas_2), nudge_y = 1) +
   theme(legend.position = "none") 
 ```
-In big municipalities, PP and PSOE win the majority of the time. 
+
+In big municipalities, PP and PSOE win the majority of the time.
 
 ## Later {visibility="hidden"}
 
