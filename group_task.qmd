@@ -28,7 +28,7 @@ library(scales)
 
 ```{r}
 db <- DBI::dbConnect(SQLite(), "database.sqlite", extended_types = T)
-dbListTables(db)
+dbListTables(db) 
 ```
 
 # Data Processing
@@ -50,11 +50,13 @@ q1_df <- tbl(db, "election_data_2") %>%
 
 ```{r}
 #Create a table in sql db for faster data retrieval
-vote_sum <- q1_df %>% 
-  group_by(nat_reg, elec_date) %>% 
-  summarise(vote_total = sum(vote_count)) 
-vote_sum %>% head()
-compute(vote_sum, temporary = FALSE, name='vote_sum')
+if(!dbListTables(db) %>% str_detect("vote_sum") %>% any()) {
+  vote_sum <- q1_df %>% 
+    group_by(nat_reg, elec_date) %>% 
+    summarise(vote_total = sum(vote_count)) 
+  vote_sum %>% head()
+  compute(vote_sum, temporary = FALSE, name='vote_sum')
+}
 tbl(db, "vote_sum")
 ```
 
@@ -68,13 +70,15 @@ ggplot(plot1_data) +
 2.  Which party was the winner in the municipalities with more than 100,000 habitants (census) in each of the elections?
 
 ```{r}
-vote_full <- tbl(db, "election_data_2") %>% 
-  group_by(elec_date, cod_mun) %>% 
-  mutate(valid_votes = sum(vote_count) + votos_blancos,
-         percent = vote_count/ valid_votes * 100) %>% 
-  select(elec_date, cod_mun, party, vote_count, valid_votes, percent)
-
-compute(vote_full, temporary = FALSE, name = "vote_full")
+#Create another table for ease of computing
+if(dbListTables(db) %>% str_detect("vote_full") %>% any()) {
+    vote_full <- tbl(db, "election_data_2") %>% 
+      group_by(elec_date, cod_mun) %>% 
+      mutate(valid_votes = sum(vote_count) + votos_blancos,
+             percent = vote_count/ valid_votes * 100) %>% 
+    select(elec_date, cod_mun, party, vote_count, valid_votes, percent)
+    compute(vote_full, temporary = FALSE, name = "vote_full")
+}
 ```
 
 ```{r}
