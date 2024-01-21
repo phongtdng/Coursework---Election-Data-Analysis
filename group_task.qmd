@@ -275,8 +275,8 @@ rural_winners %>%
 
 ```{r}
 # Obtaining the average estimated voting intention for each party
-voting_intention <- tbl(db, "surveys_new") %>%
-  filter(date_elec == "2019-11-10") %>% 
+voting_intention <- tbl(db, "surveys") %>%
+  filter(date_elec >= '2008-01-01') %>% 
   select(siglas, date_elec, field_date_from, field_date_to,estimated_voting_intention) %>%
   mutate(siglas_imp = case_when(siglas == "PSOE" ~ "PSOE",
                                 siglas == "PP" ~ "PP",
@@ -285,19 +285,18 @@ voting_intention <- tbl(db, "surveys_new") %>%
                                 siglas == "MP" ~ "MP",
                                 siglas == "VOX" ~ "VOX",
                                 TRUE ~ "OTHER"), .after = "siglas") %>% 
-  group_by(siglas_imp) %>%
+  group_by(date_elec, siglas_imp) %>%
   summarise(average_intention = mean(estimated_voting_intention)) %>% 
   collect()
 
 # Calculate the national vote share for each party
 vote_share_real <- tbl(db, "vote_full") %>% 
-  filter(elec_date == "2019-11-01")  %>% 
   left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>%  
   select(elec_date, cod_mun, party, siglas_2, vote_count, valid_votes) %>% 
   mutate(siglas_2 = ifelse(siglas_2 %in% c('PSOE', 'PP','VOX', 'CS', 'MP', 'UP-IU'),siglas_2, 'OTHER')) %>% 
-  group_by(cod_mun, siglas_2) %>% 
+  group_by(elec_date,cod_mun, siglas_2) %>% 
   summarise(total_votes = sum(vote_count), valid_votes) %>% 
-  group_by(siglas_2) %>% 
+  group_by(elec_date, siglas_2) %>% 
   summarise(national_share = sum(total_votes)/sum(valid_votes) *100) %>% 
   collect() 
 ```
@@ -305,20 +304,38 @@ vote_share_real <- tbl(db, "vote_full") %>%
 ```{r}
 #Comparison(election 2019-11-01)
 vote_share_real %>% 
-  left_join(voting_intention, by = join_by("siglas_2" == "siglas_imp")) %>% 
-  mutate(poll_error = average_intention - national_share)
+  mutate(elec_date = ymd(elec_date)) %>% 
+  filter(elec_date == '2019-11-01') %>% 
+  left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
+  mutate(poll_error = average_intention - national_share) %>% 
+  ungroup() %>% 
+  select(-elec_date) %>% relocate(date_elec, .before = siglas_2)
 ```
 
 7.  In which election were the polls most wrong?
 
 ```{r}
-
+vote_share_real %>% 
+  mutate(elec_date = ymd(elec_date)) %>% 
+  left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
+  mutate(poll_error = average_intention - national_share) %>% 
+  ungroup() %>% 
+  select(-elec_date) %>% relocate(date_elec, .before = siglas_2) %>% 
+  group_by(date_elec) %>% 
+  summarise(total_error = sum(abs(poll_error), na.rm = TRUE)) %>% 
+  slice_max(total_error, n =1)
 ```
 
 8.  How were the polls wrong in national parties (PSOE, PP, VOX, CS, MP, UP - IU)?
 
 ```{r}
-
+vote_share_real %>% 
+  mutate(elec_date = ymd(elec_date)) %>% 
+  left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
+  mutate(poll_error = average_intention - national_share) %>% 
+  ungroup() %>% 
+  select(-elec_date) %>% relocate(date_elec, .before = siglas_2) %>% 
+  filter(siglas_2 != "OTHER")
 ```
 
 9.  Which polling houses got it right the most and which ones deviated the most from the results?
