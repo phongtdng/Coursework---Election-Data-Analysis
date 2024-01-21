@@ -86,49 +86,48 @@ winner_100k <- tbl(db, "vote_full") %>%
   left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
   filter(censo_total > 100000) %>% 
   group_by(elec_date, cod_mun) %>% 
-  filter(percent == max(percent)) 
+  filter(percent == max(percent)) %>% 
+  ungroup() %>% 
+  collect()
 ```
 
 ```{r}
+#Helper function to look for winner of a certain year
+winner <- function(elec) {
+ return(
+   winner_100k %>% 
+     filter(elec_date == elec) %>% 
+     group_by(party) %>% 
+     summarise(wins = n()) %>% 
+     slice_max(wins, n = 1)
+ ) 
+}
+
 #2008
-winner_100k %>% filter(as.Date(elec_date) == 2008) %>%
-  group_by(party) %>% 
-  summarise(wins = count()) %>% 
-  arrange(desc(wins))
+winner('2008-03-01')
 
 #2011
-winner_100k %>% filter(as.Date(elec_date) == 2011) %>%
-  group_by(party) %>% 
-  summarise(wins = count()) %>% 
-  arrange(desc(wins))
+winner('2011-11-01')
 
 #2015
-winner_100k %>% filter(as.Date(elec_date) == 2015) %>%
-  group_by(party) %>% 
-  summarise(wins = count()) %>% 
-  arrange(desc(wins))
+winner('2015-12-01')
+
+#2016
+winner('2016-06-01')
 
 #2019-1
-winner_100k %>% filter(elec_date == "2019-04-01") %>%
-  group_by(party) %>% 
-  summarise(wins = count()) %>% 
-  arrange(desc(wins))
+winner('2019-04-01')
 
 #2019-2
-winner_100k %>% filter(elec_date == "2019-11-01") %>%
-  group_by(party) %>% 
-  summarise(wins = count()) %>% 
-  arrange(desc(wins))
-
+winner('2019-11-01')
 ```
 
 ```{r}
 winner_100k_summary <- winner_100k %>% 
   group_by(elec_date, party) %>% 
-  summarise(wins = count()) %>% 
+  summarise(wins = n()) %>% 
   filter(wins == max(wins)) %>% 
-  left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>% 
-  collect() 
+  left_join(tbl(db, "abbrev_2") %>% collect(), by = join_by("party" == "denominacion")) 
 
 ggplot(winner_100k_summary) +
   geom_col(aes(x= elec_date, y = wins, fill = siglas_2)) +
