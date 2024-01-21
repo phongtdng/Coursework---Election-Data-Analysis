@@ -1,16 +1,14 @@
 ---
 title: "Group Task"
 author: "Phong Duong"
-format:
-  html:
-    theme: [style.scss]
-    toc: true
-    toc-location: right
-    toc-title: Índice
+format: 
+  revealjs:
+    width: 1920
+    height: 1080
 editor: visual
 ---
 
-# Required packages
+## Required packages {visibility="hidden"}
 
 > Insert in the lower chunk the packages you will need
 
@@ -24,54 +22,72 @@ library(lubridate)
 library(scales)
 ```
 
-# Data
+# About the data
+
+## Data
 
 ```{r}
+#| echo: true
 db <- DBI::dbConnect(SQLite(), "database.sqlite", extended_types = T)
-dbListTables(db) 
 ```
 
-# Data Processing
+After pivoting, the data frame became very large (22 million rows on election_data) and makes it too computationally intensive to work with at some point. Therefore, we decided to create a SQL database and migrated all the data there so we can just pull out the needed data tables without having to store them in R environment.
 
-```{r}
+# The Analysis
 
-```
+## Distribution of national parties vs regional
 
-# Questions
-
-1.  How is the vote of national parties (PSOE, PP, VOX, CS, MP, UP - IU) distributed against regional or nationalist parties?
-
-```{r}
-q1_df <- tbl(db, "election_data_2") %>% 
-  select(cod_mun, elec_date, party, vote_count) %>% 
-  left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>% 
-  mutate(nat_reg = ifelse(siglas_2 %in% c('PSOE', 'PP','VOX', 'CS', 'MP', 'UP-IU'),'national', 'regional'))
-```
+How is the vote of national parties (PSOE, PP, VOX, CS, MP, UP - IU) distributed against regional or nationalist parties?
 
 ```{r}
 #Create a table in sql db for faster data retrieval
 if(!dbListTables(db) %>% str_detect("vote_sum") %>% any()) {
+  q1_df <- tbl(db, "election_data_2") %>% 
+  select(cod_mun, elec_date, party, vote_count) %>% 
+  left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>% 
+  mutate(nat_reg = ifelse(siglas_2 %in% c('PSOE', 'PP','VOX', 'CS', 'MP', 'UP-IU'),'national', 'regional'))
+  
   vote_sum <- q1_df %>% 
     group_by(nat_reg, elec_date) %>% 
     summarise(vote_total = sum(vote_count)) 
   vote_sum %>% head()
   compute(vote_sum, temporary = FALSE, name='vote_sum')
 }
-tbl(db, "vote_sum")
 ```
 
+::: columns
+::: {.column width="70%"}
+### Plot
+
 ```{r}
+#| fig-height: 7
+#| fig-width : 13
 plot1_data <- tbl(db, "vote_sum") 
 ggplot(plot1_data) +
   geom_col(aes(x = elec_date, y = vote_total/10^6, fill = nat_reg), position = position_dodge2()) +
   labs(y = "Total votes (in millions)")
 ```
+:::
 
-2.  Which party was the winner in the municipalities with more than 100,000 habitants (census) in each of the elections?
+::: {.column width="30%"}
+### Data tbl
+
+```{r}
+tbl(db, "vote_sum") %>% collect() %>% tibble()
+```
+:::
+
+National parities largely outweigh regional parties in votes. It is interesting, however, that in some elections there was a surge in votes for regional parties (e.g. in 2011) so there might be interesting events happening in between the election and the former.
+
+:::
+
+## Winner in big municipalities
+
+Which party was the winner in the municipalities with more than 100,000 habitants (census) in each of the elections?
 
 ```{r}
 #Create another table for ease of computing
-if(dbListTables(db) %>% str_detect("vote_full") %>% any()) {
+if(!dbListTables(db) %>% str_detect("vote_full") %>% any()) {
     vote_full <- tbl(db, "election_data_2") %>% 
       group_by(elec_date, cod_mun) %>% 
       mutate(valid_votes = sum(vote_count) + votos_blancos,
@@ -106,6 +122,10 @@ winner <- function(elec) {
      slice_max(wins, n = 1)
  ) 
 }
+```
+
+```{r}
+#| output: false
 
 #2008
 winner('2008-03-01')
@@ -127,21 +147,28 @@ winner('2019-11-01')
 ```
 
 ```{r}
+#Summary data frame to make the plot
 winner_100k_summary <- winner_100k %>% 
   group_by(elec_date, party) %>% 
   summarise(wins = n()) %>% 
   filter(wins == max(wins)) %>% 
   left_join(tbl(db, "abbrev_2") %>% collect(), by = join_by("party" == "denominacion")) 
+```
 
+```{r}
 ggplot(winner_100k_summary) +
   geom_col(aes(x= elec_date, y = wins, fill = siglas_2)) +
   geom_text(aes(x = elec_date, y = wins,label = siglas_2), nudge_y = 1) +
   theme(legend.position = "none") 
 ```
+In big municipalities, PP and PSOE win the majority of the time. 
+
+## Later {visibility="hidden"}
 
 3.  Which party was the second when the first was the PSOE? And when the first was the PP?
 
 ```{r}
+#| eval: false
 first_second <- tbl(db, "vote_full") %>% 
   left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
   filter(censo_total > 100000) %>% 
@@ -155,6 +182,7 @@ first_second <- tbl(db, "vote_full") %>%
 ```
 
 ```{r}
+#| eval: false
 #First is PSOE
 
 #Count how many times got second place
@@ -187,6 +215,7 @@ first_second %>%
 ```
 
 ```{r}
+#| eval: false
 #First is PP
 
 #Count how many times got second place
@@ -221,6 +250,7 @@ first_second %>%
 4.  Who benefits from low turnout?
 
 ```{r}
+#| eval: false
 #Long run time, consider optimizing 
 tbl(db,"election_data_2") %>% 
   left_join(tbl(db, "abbrev_2"),by = join_by("party" == "denominacion")) %>% 
@@ -237,6 +267,7 @@ tbl(db,"election_data_2") %>%
 5.  How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
 
 ```{r}
+#| eval: false
 q5_df <- tbl(db, "vote_full") %>% 
   left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>%
   filter(siglas_2 != "OTHER") %>% 
@@ -247,6 +278,7 @@ cor(q5_df$censo_total, q5_df$valid_votes)
 ```
 
 ```{r}
+#| eval: false
 #Vote data frame of interested parties and in rural area (population <= 5000)
 #Criteria for rural based on DEMOGRAFÍA DE LA POBLACIÓN RURAL en 2020
 rural_winners <- tbl(db, "vote_full") %>% 
@@ -266,6 +298,7 @@ rural_winners %>%
 ```
 
 ```{r}
+#| eval: false
 #2008
 rural_winners %>% 
   group_by(elec_date, cod_mun) %>% 
@@ -277,6 +310,7 @@ rural_winners %>%
 6.  How to calibrate the error of the polls (remember that the polls are voting intentions at national level - national parties: PSOE, PP, VOX, CS, MP, UP - IU)?
 
 ```{r}
+#| eval: false
 # Obtaining the average estimated voting intention for each party
 voting_intention <- tbl(db, "surveys") %>%
   filter(date_elec >= '2008-01-01') %>% 
@@ -305,6 +339,7 @@ vote_share_real <- tbl(db, "vote_full") %>%
 ```
 
 ```{r}
+#| eval: false
 #Comparison(election 2019-11-01)
 vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
@@ -318,6 +353,7 @@ vote_share_real %>%
 7.  In which election were the polls most wrong?
 
 ```{r}
+#| eval: false
 vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
   left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
@@ -332,6 +368,7 @@ vote_share_real %>%
 8.  How were the polls wrong in national parties (PSOE, PP, VOX, CS, MP, UP - IU)?
 
 ```{r}
+#| eval: false
 vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
   left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
