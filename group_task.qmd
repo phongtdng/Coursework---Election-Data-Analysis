@@ -1,8 +1,10 @@
 ---
 title: "Group Task"
-author: "Phong Duong"
-format: 
+author: "Valeria Contreras-Phong Duong-Jieun Park-Ana Pérez-Sofia Villamil"
+format:
   revealjs:
+    theme: moon
+    incremental: true
     width: 1920
     height: 1080
 editor: visual
@@ -22,6 +24,15 @@ library(lubridate)
 library(scales)
 ```
 
+## Required packages
+
+-   tidyverse
+-   dbplyr
+-   RSQLite
+-   DBI
+-   lubridate
+-   scales
+
 # About the data
 
 ## Data
@@ -31,13 +42,13 @@ library(scales)
 db <- DBI::dbConnect(SQLite(), "database.sqlite", extended_types = T)
 ```
 
-After pivoting, the data frame became very large (22 million rows on election_data) and makes it too computationally intensive to work with at some point. Therefore, we decided to create a SQL database and migrated all the data there so we can just pull out the needed data tables without having to store them in R environment.
+Due to the large size of the pivoted **`election_data`** dataframe (22 million rows), handling it became computationally intensive. To optimize efficiency, we migrated the data to a SQL database, enabling selective retrieval of necessary tables and reducing the load on the R environment.
 
 # The Analysis
 
 ## Distribution of national parties vs regional
 
-How is the vote of national parties (PSOE, PP, VOX, CS, MP, UP - IU) distributed against regional or nationalist parties?
+1.How is the vote of national parties (PSOE, PP, VOX, CS, MP, UP - IU) distributed against regional or nationalist parties?
 
 ```{r}
 #Create a table in sql db for faster data retrieval
@@ -76,13 +87,15 @@ ggplot(plot1_data) +
 tbl(db, "vote_sum") %>% collect() %>% tibble()
 ```
 :::
-
-National parities largely outweigh regional parties in votes. It is interesting, however, that in some elections there was a surge in votes for regional parties (e.g. in 2011) so there might be interesting events happening in between the election and the former.
 :::
 
-## Winner in big municipalities
+::: {style="text-align: center"}
+National parities largely outweigh regional parties in votes. However, notable surges in votes for regional parties during certain elections, such as in 2011, suggest there were impactful events occurring between elections.
+:::
 
-Which party was the winner in the municipalities with more than 100,000 habitants (census) in each of the elections?
+## Dominant Political Parties in Municipalities
+
+2.Which party was the winner in the municipalities with more than 100,000 habitants (census) in each of the elections?
 
 ```{r}
 #Create another table for ease of computing
@@ -161,11 +174,13 @@ ggplot(winner_100k_summary) +
   theme(legend.position = "none") 
 ```
 
-In big municipalities, PP and PSOE win the majority of the time.
+::: {style="text-align: center"}
+In larger municipalities, PP and PSOE predominantly emerge as the winning parties
+:::
 
-## Later {visibility="hidden"}
+## Primary Runner-Up Parties to PSOE and PP in Elections
 
-3.  Which party was the second when the first was the PSOE? And when the first was the PP?
+3.Which party was the second when the first was the PSOE? And when the first was the PP?
 
 ```{r}
 #| eval: false
@@ -247,7 +262,9 @@ first_second %>%
  filter(count_second == max(count_second))
 ```
 
-4.  Who benefits from low turnout?
+## Impact of Voter Turnout on Election Outcomes
+
+4.Who benefits from low turnout?
 
 ```{r}
 #| eval: false
@@ -264,7 +281,9 @@ tbl(db,"election_data_2") %>%
   head()
 ```
 
-5.  How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
+## Analyzing the Correlation Between Population Census and Voting Patterns
+
+5.How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
 
 ```{r}
 #| eval: false
@@ -307,7 +326,11 @@ rural_winners %>%
   geom_histogram()
 ```
 
-6.  How to calibrate the error of the polls (remember that the polls are voting intentions at national level - national parties: PSOE, PP, VOX, CS, MP, UP - IU)?
+# Analyzing Polling Errors: Accuracy and Discrepancies in Election Forecasts
+
+## Calibrating the error of the polls
+
+6.How to calibrate the error of the polls (remember that the polls are voting intentions at national level - national parties: PSOE, PP, VOX, CS, MP, UP - IU)?
 
 ```{r}
 #| eval: false
@@ -350,7 +373,9 @@ vote_share_real %>%
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2)
 ```
 
-7.  In which election were the polls most wrong?
+## Identifying the Election with the Greatest Polling Discrepancies
+
+7.In which election were the polls most wrong?
 
 ```{r}
 #| eval: false
@@ -365,7 +390,9 @@ vote_share_real %>%
   slice_max(total_error, n =1)
 ```
 
-8.  How were the polls wrong in national parties (PSOE, PP, VOX, CS, MP, UP - IU)?
+## Assessing Polling Inaccuracies for National Parties
+
+8.How were the polls wrong in national parties (PSOE, PP, VOX, CS, MP, UP - IU)?
 
 ```{r}
 #| eval: false
@@ -378,8 +405,20 @@ vote_share_real %>%
   filter(siglas_2 != "OTHER")
 ```
 
-9.  Which polling houses got it right the most and which ones deviated the most from the results?
+## Identifying Top Performers and Those with Greatest Deviations
+
+9.Which polling houses got it right the most and which ones deviated the most from the results?
 
 ```{r}
 
 ```
+
+------------------------------------------------------------------------
+
+::: {style="text-align: center; font-size: xx-large; font-weight: bold;"}
+THE END
+:::
+
+::: {style="text-align: center; font-size: larger;"}
+<strong>We are open for any questions you guys have.</strong>
+:::
