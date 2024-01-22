@@ -482,15 +482,19 @@ error_table <- vote_share_real %>%
 error_table |>  slice_max(total_error, n =1) 
 
 ```
+
 ### PLOT
+
 ```{r}
-ggplot(error_table, aes(x = date_elec, y = total_error)) +
+ggplot(error_table, aes(x = as.character(date_elec), y = total_error)) +
   geom_bar(stat = "identity", fill = "red") +
   labs(title = "Total Error by Election Date",
        x = "Election Date",
        y = "Total Error") 
 ```
-###TABLE 
+
+###TABLE
+
 ```{r}
 error_table |>  slice_max(total_error, n =1) 
 ```
@@ -511,7 +515,8 @@ error_by_party <- vote_share_real %>%
   group_by(siglas_2) %>%  
   summarise(total_error = sum(abs(poll_error), na.rm = TRUE))
 ```
-###PLOT 
+
+###PLOT
 
 ```{r}
 ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
