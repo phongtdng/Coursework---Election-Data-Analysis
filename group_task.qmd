@@ -26,6 +26,7 @@ library(scales)
 library(glue)
 library(ggplot2)
 library(ggbeeswarm)
+library(forcats)
 ```
 
 ## Required packages
@@ -36,6 +37,9 @@ library(ggbeeswarm)
 -   DBI
 -   lubridate
 -   scales
+-   glue
+-   forcats
+-   ggplot2
 
 # About the data
 
@@ -137,6 +141,8 @@ db <- DBI::dbConnect(SQLite(), "database.sqlite", extended_types = T)
 ```
 
 Due to the large size of the pivoted **`election_data`** dataframe (22 million rows), handling it became computationally intensive. To optimize efficiency, we migrated the data to a SQL database, enabling selective retrieval of necessary tables and reducing the load on the R environment.
+
+![](meme1.jpg){fig-align="center"}
 
 # The Analysis
 
@@ -430,10 +436,6 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
 4.Who benefits from low turnout?
 
 ```{r}
-#| output: false
-tbl(db,"election_data_2")
-
-#Long run time, consider optimizing 
 lowturnout <- tbl(db,"election_data_2") %>% 
   left_join(tbl(db, "abbrev_2"),by = join_by("party" == "denominacion")) %>% 
   left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
@@ -442,13 +444,17 @@ lowturnout <- tbl(db,"election_data_2") %>%
   select(elec_date, cod_mun, party, siglas_2, participacion_2, vote_count,  participation_pcg, censo_total) %>% 
   filter(participation_pcg < 30) %>% 
   arrange(participation_pcg) %>% 
-  filter(vote_count == max(vote_count)) 
+  filter(vote_count == max(vote_count)) %>% 
+  collect()
 ```
 
 ```{r}
-library(forcats)
-ggplot(lowturnout, aes(x = fct_reorder(siglas_2,vote_count), 
-                       y = vote_count, fill = siglas_2)) +
+lowturnout %>% 
+  group_by(siglas_2) %>% 
+  summarise(sum_vote = sum(vote_count)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x = reorder(siglas_2,desc(sum_vote)), 
+                       y = sum_vote, fill = siglas_2)) +
   
   geom_bar(stat = "identity", na.rm = TRUE) +
   scale_fill_manual(values = c("PP" ="#0157a1","PSOE" = "#f20400","EAJ" = "#00822a"))+
@@ -456,21 +462,21 @@ ggplot(lowturnout, aes(x = fct_reorder(siglas_2,vote_count),
   theme_minimal()+
 
 coord_polar() +
-  annotate( x = 11.5, y = 1100, label = "1000",
+  annotate( x = 10.5, y = 1000, label = "1000",
             geom = "text", color = "gray12",size= 3, na.rm = TRUE) +
  
-   annotate( x = 11.5,y = 2100, label = "2000", 
+   annotate( x = 10.65,y = 2100, label = "2000", 
              geom = "text", color = "gray12", size=3, na.rm = TRUE) +
  
-   annotate( x = 11.5, y =3100, label = "3000",
+   annotate( x = 10.7, y =3100, label = "3000",
              geom = "text", color = "gray12", size=3, na.rm = TRUE) +
   
-  annotate( x = 11.7,  y =4100, label = "4000", 
+  annotate( x = 11 , y = 4100, label = "4000", 
             geom = "text", color = "gray12", size=3, na.rm = TRUE ) +
   
  
    scale_y_continuous(
-    limits = c(-1500, 3500),
+    limits = c(-1500, 4000),
     expand = c(0, 0),
     breaks = c(0, 1000, 2000, 3000))+
    
@@ -508,7 +514,8 @@ rural_winners %>%
   filter(percent == max(percent)) %>% 
   group_by(elec_date, siglas_2) %>% 
   summarise(win_count = n()) %>% 
-  arrange(elec_date,desc(win_count))
+  arrange(elec_date,desc(win_count)) |> 
+  filter(elec_date == "2008-03-01")
 ```
 
 ```{r}
@@ -517,7 +524,7 @@ rural_winners %>%
   group_by(elec_date, cod_mun) %>% 
   filter(percent == max(percent) & elec_date == "2008-03-01") %>% 
   ggplot(aes(x = percent, fill = siglas_2)) +
-  geom_histogram(binwidth = 1, show.legend = FALSE) +  
+  geom_histogram(binwidth = 1, show.legend = TRUE) +  
   labs(
     title = "Winning Times in Rural Zones per Party",
     subtitle = "Election Date: 2008-03-01",
@@ -528,10 +535,24 @@ rural_winners %>%
   theme_minimal() +
   theme(
     plot.title = element_text(size = 14, face = "bold"),
-    plot.subtitle = element_text(size = 12)
-  )
-
-
+    plot.subtitle = element_text(size = 12),
+    legend.text = element_text(size = 5),
+    legend.key.size = unit(5, "mm")
+  ) +
+  scale_fill_manual(values = c(
+    "PSOE" = "#f20400",
+    "PP" = "#0157a1",
+    "UP-IU" = "#663278",
+    "CS" = "#e9550d",
+    "EAJ" = "#00822a",
+    "VOX" = "#76b829", 
+    "MP" ="#00e1c5",
+    "CIU" = "#f68b22",
+    "EH-BILDU" = "#95c11f",
+    "BNG" = "#76b4de",
+    "COM" = "#8c3651"
+  )) 
+  
 ```
 
 # Analyzing Polling Errors: Accuracy and Discrepancies in Election Forecasts
@@ -675,8 +696,8 @@ error_by_party <- vote_share_real %>%
 ```
 
 ```{r}
-ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
-  geom_bar(stat = "identity", fill = "#87CEEB" ) +  
+ggplot(error_by_party, aes(x = reorder(siglas_2, total_error), y = total_error, fill = siglas_2)) +
+  geom_bar(stat = "identity") +  
   labs(
     title = "Total Error by Party",
     x = "Party",
@@ -689,9 +710,19 @@ ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
     axis.text.y = element_text(size = 10),                
     legend.position = "none"                              
   ) +
-  scale_y_continuous(expand = expansion(mult = c(0, .1))) 
+  scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+  scale_fill_manual(values = c(
+    "PSOE" = "#f20400",
+    "PP" = "#0157a1",
+    "UP-IU" = "#663278",
+    "CS" = "#e9550d",
+    "EAJ" = "#00822a",
+    "VOX" = "#76b829", 
+    "MP" ="#00e1c5"
+  ))
 
 ```
+
 
 ### Table
 
