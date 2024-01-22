@@ -23,6 +23,8 @@ library(DBI)
 library(lubridate)
 library(scales)
 library(glue)
+library(ggplot2)
+
 ```
 
 ## Required packages
@@ -36,7 +38,7 @@ library(glue)
 
 # About the data
 
-## Data Original {visibility="hidden"}
+## Original data {visibility="hidden"}
 
 ```{r}
 if(!file.exists("database.sqlite")) {
@@ -158,21 +160,34 @@ if(!dbListTables(db) %>% str_detect("vote_sum") %>% any()) {
 ```
 
 ::: columns
-::: {.column width="70%"}
-### Plot
-
+::: {.column width="50%" style="align: center"}
 ```{r}
 #| fig-height: 7
 #| fig-width : 13
 plot1_data <- tbl(db, "vote_sum") 
-ggplot(plot1_data) +
-  geom_col(aes(x = elec_date, y = vote_total/10^6, fill = nat_reg), position = position_dodge2()) +
-  labs(y = "Total votes (in millions)")
+ggplot(plot1_data, aes(x = elec_date, y = vote_total/10^6, fill = nat_reg)) +
+  geom_col(position = position_dodge2()) +
+  labs( title = "Vote Distribution: National vs. Regional/ Nationalist Parties",
+  subtitle = "Analysis of votes for national parties (PSOE, PP, VOX, CS, MP, UP-IU) compared to regional or nationalist parties",
+  x = "Election Date",
+  y = "Total Votes (in millions)",
+  fill = NULL
+  ) +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 12),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 10)
+  )
+
+
+
 ```
 :::
 
-::: {.column width="30%"}
-### Data tbl
+::: {.column width="30%" style="align: center"}
+### Table
 
 ```{r}
 tbl(db, "vote_sum") %>% collect() %>% tibble()
@@ -258,12 +273,29 @@ winner_100k_summary <- winner_100k %>%
   left_join(tbl(db, "abbrev_2") %>% collect(), by = join_by("party" == "denominacion")) 
 ```
 
+::: {style="text-align: center"}
 ```{r}
+party_colors <- c("PP" = "#0157a1", "PSOE" = "#f20400")
+
 ggplot(winner_100k_summary) +
-  geom_col(aes(x= elec_date, y = wins, fill = siglas_2)) +
-  geom_text(aes(x = elec_date, y = wins,label = siglas_2), nudge_y = 1) +
-  theme(legend.position = "none") 
+  geom_col(aes(x = elec_date, y = wins, fill = siglas_2)) +
+  geom_text(aes(x = elec_date, y = wins, label = siglas_2), nudge_y = 1) +
+  scale_fill_manual(values = party_colors) +  
+  labs(
+    title = "Election Winners in Cities Over 100k Inhabitants",
+    subtitle = "Comparative wins of PP and PSOE across multiple elections",
+    x = "Election Date",
+    y = "Number of Wins",
+    fill = "Party"
+  ) + 
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 12)
+  )
+
 ```
+:::
 
 ::: {style="text-align: center"}
 In larger municipalities, PP and PSOE predominantly emerge as the winning parties
@@ -274,6 +306,7 @@ In larger municipalities, PP and PSOE predominantly emerge as the winning partie
 3.Which party was the second when the first was the PSOE? And when the first was the PP?
 
 ```{r}
+
 first_second <- tbl(db, "vote_full") %>% 
   left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
   filter(censo_total > 100000) %>% 
@@ -281,13 +314,13 @@ first_second <- tbl(db, "vote_full") %>%
   left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>% 
   relocate(siglas_2, .after = party) %>% 
   group_by(elec_date, cod_mun) %>% 
-  arrange(elec_date, cod_mun) %>% #Check if this necessary
+  arrange(elec_date, cod_mun) %>% 
   slice_max(vote_count, n = 2) %>% 
   collect()
 ```
 
 ```{r}
-
+#| output: false
 #First is PSOE
 
 #Count how many times got second place
@@ -322,28 +355,28 @@ first_psoe <- first_second %>%
 ```{r}
 ggplot(first_psoe, aes(y = reorder(elec_date, desc(elec_date)), 
                      x = count_second, fill = second)) +
-  
   geom_bar(stat = "identity", position = "identity", width = 0.7) +
   scale_fill_manual(values = c("PP" = "#0157a1", "UP-IU" = "#663278")) +
 
-  labs(x="", y="", title= "Secon party when the winner is PSOE", subtitle = "total nº of votes per election in municipalites with more than 100.000 inhabitants") +
+  labs(x="", y="", title= "Second party when the winner is PSOE", subtitle = "total nº of votes per election in municipalites with more than 100.000 inhabitants") +
   theme_minimal() +
   theme(
-    plot.title = element_text(face = "bold", size = 18, hjust = 0.5),
-    plot.subtitle = element_text(face = "italic", size = 14, hjust = 0.5),
+    plot.title = element_text(face = "bold", size = 14, hjust = 0),
+    plot.subtitle = element_text(face = "italic", size = 12, hjust = 0),
     legend.position = "bottom",
     legend.title=element_blank(),
     axis.text.y = element_text(size = 10),
     axis.text.x = element_text(size = 10),
     axis.title = element_blank(),
     panel.grid.major.y = element_line(color = "gray", linetype = "dashed", size = 0.3)
-  ) 
+  )  
   
 ```
 
 ```{r}
-#First is PP
+#| output: false
 
+#First is PP
 #Count how many times got second place
 first_second %>% 
   filter(siglas_2[1] == "PP") %>% 
@@ -380,10 +413,10 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
   geom_bar(stat = "identity", position = "identity", width = 0.7) +
   scale_fill_manual(values = c("PSOE" = "#f20400", "UP-IU" = "#663278")) +
   theme_minimal() +
-  labs(x="", y="", title= "Secon party when the winner is PP", subtitle = "total nº of votes per election in municipalites with more than 100.000 inhabitants") +
+  labs(x="", y="", title= "Second party when the winner is PP", subtitle = "total nº of votes per election in municipalites with more than 100.000 inhabitants") +
    theme(
-    plot.title = element_text(face = "bold", size = 18, hjust = 0.5),
-    plot.subtitle = element_text(face = "italic", size = 14, hjust = 0.5),
+    plot.title = element_text(face = "bold", size = 14, hjust = 0),
+    plot.subtitle = element_text(face = "italic", size = 12, hjust = 0),
     legend.position = "bottom",
     legend.title=element_blank(),
     axis.text.y = element_text(size = 10),
@@ -398,6 +431,8 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
 4.Who benefits from low turnout?
 
 ```{r}
+tbl(db,"election_data_2") %>% 
+
 #Long run time, consider optimizing 
 lowturnout <- tbl(db,"election_data_2") %>% 
   left_join(tbl(db, "abbrev_2"),by = join_by("party" == "denominacion")) %>% 
@@ -453,12 +488,14 @@ coord_polar() +
 ))
 ```
 
+### Plot
+
 ## Analyzing the Correlation Between Population Census and Voting Patterns
 
 5.How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
 
 ```{r}
-#| eval: false
+#| output: false
 q5_df <- tbl(db, "vote_full") %>% 
   left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>%
   filter(siglas_2 != "OTHER") %>% 
@@ -493,7 +530,21 @@ rural_winners %>%
   group_by(elec_date, cod_mun) %>% 
   filter(percent == max(percent) & elec_date == "2008-03-01") %>% 
   ggplot(aes(x = percent, fill = siglas_2)) +
-  geom_histogram()
+  geom_histogram(binwidth = 1, show.legend = FALSE) +  
+  labs(
+    title = "Winning Times in Rural Zones per Party",
+    subtitle = "Election Date: 2008-03-01",
+    x = "Percentage of Votes",
+    y = "Frequency",
+    fill = "Party"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12)
+  )
+
+
 ```
 
 # Analyzing Polling Errors: Accuracy and Discrepancies in Election Forecasts
@@ -503,7 +554,7 @@ rural_winners %>%
 6.How to calibrate the error of the polls (remember that the polls are voting intentions at national level - national parties: PSOE, PP, VOX, CS, MP, UP - IU)?
 
 ```{r}
-
+#| output: false
 # Obtaining the average estimated voting intention for each party
 voting_intention <- tbl(db, "surveys") %>%
   filter(date_elec >= '2008-01-01') %>% 
@@ -532,7 +583,7 @@ vote_share_real <- tbl(db, "vote_full") %>%
 ```
 
 ```{r}
-
+#| output: false
 #Comparison(election 2019-11-01)
 vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
@@ -543,12 +594,27 @@ vote_share_real %>%
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2)
 ```
 
+### Table
+
+```{r}
+table_data <- vote_share_real %>% 
+  mutate(elec_date = ymd(elec_date)) %>% 
+  filter(elec_date == '2019-11-01') %>% 
+  left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
+  mutate(poll_error = average_intention - national_share) %>% 
+  ungroup() %>% 
+  select(-elec_date) %>% relocate(date_elec, .before = siglas_2) %>%
+  select(siglas_2, poll_error)
+table_data
+
+```
+
 ## Identifying the Election with the Greatest Polling Discrepancies
 
 7.In which election were the polls most wrong?
 
 ```{r}
-
+#| output: false
 error_table <- vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
   left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
@@ -562,20 +628,21 @@ error_table |>  slice_max(total_error, n =1)
 
 ```
 
-### Plot
-
 ```{r}
 ggplot(error_table, aes(x = as.character(date_elec), y = total_error)) +
-  geom_bar(stat = "identity", fill = "red") +
-  labs(title = "Total Error by Election Date",
-       x = "Election Date",
-       y = "Total Error") 
-```
+  geom_bar(stat = "identity", fill = "#87CEEB") +
+  labs(
+    title = "Total Error by Election Date",
+    x = "Election Date",
+    y = "Total Error"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),  
+    axis.title = element_text(face = "bold", size = 12),  
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, size = 10),  
+    axis.text.y = element_text(size = 10)) +
+  scale_y_continuous(expand = expansion(mult = c(0, .1)))  
 
-### Table
-
-```{r}
-error_table |>  slice_max(total_error, n =1) 
 ```
 
 ## Assessing Polling Inaccuracies for National Parties
@@ -583,7 +650,6 @@ error_table |>  slice_max(total_error, n =1)
 8.How were the polls wrong in national parties (PSOE, PP, VOX, CS, MP, UP - IU)?
 
 ```{r}
-
 error_by_party <- vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
   left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
@@ -595,14 +661,23 @@ error_by_party <- vote_share_real %>%
   summarise(total_error = sum(abs(poll_error), na.rm = TRUE))
 ```
 
-### Plot
-
 ```{r}
 ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
-  geom_bar(stat = "identity", fill = "red" ) +
-  labs(title = "Total Error by Party",
-       x = "Party",
-       y = "Total Error") 
+  geom_bar(stat = "identity", fill = "#87CEEB" ) +  
+  labs(
+    title = "Total Error by Party",
+    x = "Party",
+    y = "Total Error"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),  
+    axis.title = element_text(face = "bold", size = 12),  
+    axis.text.x = element_text(angle = 45, hjust = 1),    
+    axis.text.y = element_text(size = 10),                
+    legend.position = "none"                              
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, .1))) 
+
 ```
 
 ### Table 
@@ -616,6 +691,7 @@ print(error_by_party)
 9.Which polling houses got it right the most and which ones deviated the most from the results?
 
 ```{r}
+#| output: false
 pollster_estimate <- tbl(db, "surveys") %>%
   filter(date_elec >= '2008-01-01') %>% 
   select(siglas, pollster, date_elec, field_date_from, field_date_to, 
@@ -646,6 +722,7 @@ pollster_result <- pollster_estimate %>%
 ```
 
 ```{r}
+#| output: false
 #How many times pollsters correctly estimated winning party
 correct_estimates <- pollster_result %>% 
   select(date_elec, pollster, correct_guess) %>% 
@@ -661,6 +738,7 @@ correct_estimates %>% slice_min(correct_guesses)
 ```
 
 ```{r}
+#| output: false
 summarise_pollster_error <- pollster_result %>% 
   select(date_elec, pollster, error) %>% 
   group_by(pollster) %>% 
@@ -674,10 +752,25 @@ summarise_pollster_error %>% slice_max(avg_error)
 ```
 
 ```{r}
-#error plot
-ggplot(summarise_pollster_error, aes(y = avg_error, x = pollster)) +
-  geom_point() +
-  theme(axis.text.x = element_text(size = 3))
+ggplot(summarise_pollster_error, aes(x = reorder(pollster, avg_error), y = avg_error)) +
+  geom_point(color = "#87CEEB") +  
+  theme_minimal(base_size = 10) +
+  theme(
+    panel.grid.major = element_line(color = "grey80", size = 0.5),  
+    panel.grid.minor = element_blank(), 
+    axis.text.x = element_text(angle = 90, hjust = 1, size = 8),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(face = "bold", size = 12),
+    axis.title.x = element_text(face = "bold", size = 10),
+    axis.title.y = element_text(face = "bold", size = 10)
+  ) +
+  labs(
+    title = "Average Polling Error by Pollster",
+    subtitle = "Comparison of polling errors across different organizations",
+    x = "Pollster",
+    y = "Average Error"
+  ) +
+  scale_y_continuous(labels = scales::comma)
 ```
 
 ------------------------------------------------------------------------
