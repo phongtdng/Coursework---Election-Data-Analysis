@@ -431,7 +431,7 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
 4.Who benefits from low turnout?
 
 ```{r}
-tbl(db,"election_data_2") %>% 
+tbl(db,"election_data_2")
 
 #Long run time, consider optimizing 
 lowturnout <- tbl(db,"election_data_2") %>% 
