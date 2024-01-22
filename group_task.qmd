@@ -373,8 +373,6 @@ first_pp <- first_second %>%
  filter(count_second == max(count_second))
 ```
 
-### HEAD
-
 ```{r}
 ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)), 
                      x = count_second, fill = second)) +
@@ -411,12 +409,6 @@ tbl(db,"election_data_2") %>%
   arrange(participation_pcg) %>% 
   filter(vote_count == max(vote_count)) %>% 
   head()
-```
-
-### HEAD
-
-```{r}
-
 ```
 
 ## Analyzing the Correlation Between Population Census and Voting Patterns
@@ -530,7 +522,7 @@ error_table |>  slice_max(total_error, n =1)
 
 ```
 
-### PLOT
+### Plot
 
 ```{r}
 ggplot(error_table, aes(x = as.character(date_elec), y = total_error)) +
@@ -540,7 +532,7 @@ ggplot(error_table, aes(x = as.character(date_elec), y = total_error)) +
        y = "Total Error") 
 ```
 
-###TABLE
+### Table
 
 ```{r}
 error_table |>  slice_max(total_error, n =1) 
@@ -563,7 +555,7 @@ error_by_party <- vote_share_real %>%
   summarise(total_error = sum(abs(poll_error), na.rm = TRUE))
 ```
 
-### PLOT
+### Plot
 
 ```{r}
 ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
