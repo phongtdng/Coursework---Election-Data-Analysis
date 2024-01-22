@@ -1,8 +1,10 @@
 ---
 title: "Group Task"
-author: "Phong Duong"
-format: 
+author: "Valeria Contreras-Phong Duong-Jieun Park-Ana Pérez-Sofia Villamil"
+format:
   revealjs:
+    theme: moon
+    incremental: true
     width: 1920
     height: 1080
 editor: visual
@@ -20,11 +22,114 @@ library(RSQLite)
 library(DBI)
 library(lubridate)
 library(scales)
+<<<<<<< HEAD
 #fakelibrary
 #ana
+=======
+library(glue)
+>>>>>>> e0687728d8adfee1b9efad252c7f56b04088119c
 ```
 
+## Required packages
+
+-   tidyverse
+-   dbplyr
+-   RSQLite
+-   DBI
+-   lubridate
+-   scales
+
 # About the data
+
+## Data Original {visibility="hidden"}
+
+```{r}
+if(!file.exists("database.sqlite")) {
+  #Original data files
+  election_data <- read_csv(file = "./data/datos_elecciones_brutos.csv")
+  cod_mun <- read_csv(file = "./data/cod_mun.csv")
+  surveys <- read_csv(file = "./data/historical_surveys.csv")
+  abbrev <- read_csv(file = "./data/siglas.csv")
+  
+  #Pivoted election_data table name: election_data
+  election_df <- election_data %>% 
+    pivot_longer(cols = !tipo_eleccion:votos_candidaturas, names_to = 'party', values_to = 'vote_count') %>% 
+    select(-tipo_eleccion, -vuelta, -codigo_distrito_electoral) %>% #column with 0 variance
+    mutate(vote_count = replace_na(vote_count, 0),
+           cod_mun = glue('{codigo_ccaa}-{codigo_provincia}-{codigo_municipio}'), .after = codigo_municipio) 
+  
+  #Municipal population table
+  municipal_population <- election_data %>% 
+    mutate(cod_mun = glue('{codigo_ccaa}-{codigo_provincia}-{codigo_municipio}'), .after = codigo_municipio) %>% 
+    select(anno, mes, cod_mun, censo) %>% 
+    summarise(sum(censo), .by = c(cod_mun, anno, mes)) %>% 
+    rename('censo_total' = 'sum(censo)')
+  
+  #Pivoted surveys table name: surveys
+  surveys_df <- surveys %>% 
+    pivot_longer(cols = !type_survey:turnout, names_to = 'siglas', values_to = 'estimated_voting_intention') %>% 
+    mutate(date_elec = as.character(date_elec),
+           field_date_from = as.character(field_date_from),
+           field_date_to = as.character(field_date_to)) 
+  
+  #Migrate data to sqlite database
+  db_file <- "database.sqlite"
+  src_sqlite(db_file, create = TRUE) #Create database
+  db <- DBI::dbConnect(SQLite(), "database.sqlite", extended_types = T) #Connect to sqlite database
+  
+  dbWriteTable(db, "election_data", election_df, field.types = c(anno = "Int"))
+  dbWriteTable(db, "municipal_population", municipal_population)
+  dbWriteTable(db, "cod_mun", cod_mun)
+  dbWriteTable(db, "surveys", surveys_df, field.types = c(date_elec = "Date", field_date_from ="Date", field_date_to = "Date"))
+  dbWriteTable(db, "abbrev", abbrev)
+  
+  #Filtered surveys table for ease of querying
+  dbSendQuery(db, "CREATE TABLE surveys_new AS
+  SELECT *
+  FROM surveys
+  WHERE date_elec >= '2018-01-01'
+   AND exit_poll = 0
+   AND size >= 750
+   AND JULIANDAY(field_date_to) - JULIANDAY(field_date_from) > 1;
+  ")
+  
+  #Add missing parties in abbrev table 
+  dbSendQuery(db, "INSERT INTO abbrev(denominacion)
+  SELECT DISTINCT party
+  FROM election_data 
+  WHERE party NOT IN (SELECT denominacion FROM abbrev);")
+  
+  #Processed party names and abbreviation
+  dbSendQuery(db, "CREATE TABLE abbrev_2 AS
+  SELECT DISTINCT denominacion, 
+      CASE 
+          WHEN siglas LIKE '%PSOE%' OR siglas LIKE 'P.S.O.E.' OR denominacion LIKE '%PSOE%' THEN 'PSOE'
+          WHEN siglas LIKE '%P.P.%' OR denominacion LIKE '%PARTIDO POPULAR%' THEN 'PP'
+          WHEN denominacion LIKE '%PARTIDO DE LA CIUDADAN_A%'  THEN 'CS'
+          WHEN denominacion LIKE '%VASCO%' THEN 'EAJ'
+          WHEN denominacion LIKE '%NACIONALISTA GALEGO%' THEN 'BNG'
+          WHEN siglas LIKE '%COMPRO%' THEN 'COM'
+          WHEN denominacion LIKE '%UNIÓ' OR siglas = 'CIU' THEN 'CIU'
+          WHEN denominacion LIKE '%ESQUE    RRA REPUBLICANA%' AND denominacion NOT LIKE '%VALENCI%' THEN 'ERC'
+          WHEN denominacion LIKE '%BILDU%'  OR denominacion LIKE '%Aralar%' OR denominacion LIKE '%Eusko%' THEN 'EH-BILDU'
+          WHEN denominacion LIKE '%los verdes%' OR denominacion LIKE '%podem%' OR denominacion LIKE '%ezker batua%' OR denominacion LIKE '%IZQUIERDA UNIDA%' THEN 'UP-IU'
+          WHEN denominacion LIKE '%MÁS PAÍS%' THEN'MP'
+          WHEN denominacion LIKE '%VOX%' THEN 'VOX'
+          ELSE 'OTHER'
+      END AS siglas_2
+  FROM abbrev;")
+  
+  #New election data filtered and processed date
+  dbSendQuery(db, "CREATE TABLE election_data_2 AS
+  SELECT 
+      (anno || '-' || mes || '-' || '01') AS elec_date,
+      cod_mun,numero_mesas, participacion_1, participacion_2,
+      votos_blancos, votos_nulos, votos_candidaturas, party, vote_count
+  FROM election_data;")
+  
+  rm(list=ls())
+}
+```
 
 ## Data
 
@@ -33,13 +138,13 @@ library(scales)
 db <- DBI::dbConnect(SQLite(), "database.sqlite", extended_types = T)
 ```
 
-After pivoting, the data frame became very large (22 million rows on election_data) and makes it too computationally intensive to work with at some point. Therefore, we decided to create a SQL database and migrated all the data there so we can just pull out the needed data tables without having to store them in R environment.
+Due to the large size of the pivoted **`election_data`** dataframe (22 million rows), handling it became computationally intensive. To optimize efficiency, we migrated the data to a SQL database, enabling selective retrieval of necessary tables and reducing the load on the R environment.
 
 # The Analysis
 
 ## Distribution of national parties vs regional
 
-How is the vote of national parties (PSOE, PP, VOX, CS, MP, UP - IU) distributed against regional or nationalist parties?
+1.How is the vote of national parties (PSOE, PP, VOX, CS, MP, UP - IU) distributed against regional or nationalist parties?
 
 ```{r}
 #Create a table in sql db for faster data retrieval
@@ -78,13 +183,15 @@ ggplot(plot1_data) +
 tbl(db, "vote_sum") %>% collect() %>% tibble()
 ```
 :::
-
-National parities largely outweigh regional parties in votes. It is interesting, however, that in some elections there was a surge in votes for regional parties (e.g. in 2011) so there might be interesting events happening in between the election and the former.
 :::
 
-## Winner in big municipalities
+::: {style="text-align: center"}
+National parities largely outweigh regional parties in votes. However, notable surges in votes for regional parties during certain elections, such as in 2011, suggest there were impactful events occurring between elections.
+:::
 
-Which party was the winner in the municipalities with more than 100,000 habitants (census) in each of the elections?
+## Dominant Political Parties in Municipalities
+
+2.Which party was the winner in the municipalities with more than 100,000 habitants (census) in each of the elections?
 
 ```{r}
 #Create another table for ease of computing
@@ -163,11 +270,13 @@ ggplot(winner_100k_summary) +
   theme(legend.position = "none") 
 ```
 
-In big municipalities, PP and PSOE win the majority of the time.
+::: {style="text-align: center"}
+In larger municipalities, PP and PSOE predominantly emerge as the winning parties
+:::
 
-## Later {visibility="hidden"}
+## Primary Runner-Up Parties to PSOE and PP in Elections
 
-3.  Which party was the second when the first was the PSOE? And when the first was the PP?
+3.Which party was the second when the first was the PSOE? And when the first was the PP?
 
 ```{r}
 first_second <- tbl(db, "vote_full") %>% 
@@ -269,6 +378,7 @@ first_pp <- first_second %>%
  filter(count_second == max(count_second))
 ```
 
+<<<<<<< HEAD
 ```{r}
 ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)), 
                      x = count_second, fill = second)) +
@@ -290,6 +400,11 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
 ```
 
 4.  Who benefits from low turnout?
+=======
+## Impact of Voter Turnout on Election Outcomes
+
+4.Who benefits from low turnout?
+>>>>>>> e0687728d8adfee1b9efad252c7f56b04088119c
 
 ```{r}
 #Long run time, consider optimizing 
@@ -305,11 +420,17 @@ tbl(db,"election_data_2") %>%
   head()
 ```
 
+<<<<<<< HEAD
 ```{r}
 
 ```
 
 5.  How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
+=======
+## Analyzing the Correlation Between Population Census and Voting Patterns
+
+5.How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
+>>>>>>> e0687728d8adfee1b9efad252c7f56b04088119c
 
 ```{r}
 #| eval: false
@@ -352,10 +473,14 @@ rural_winners %>%
   geom_histogram()
 ```
 
-6.  How to calibrate the error of the polls (remember that the polls are voting intentions at national level - national parties: PSOE, PP, VOX, CS, MP, UP - IU)?
+# Analyzing Polling Errors: Accuracy and Discrepancies in Election Forecasts
+
+## Calibrating the error of the polls
+
+6.How to calibrate the error of the polls (remember that the polls are voting intentions at national level - national parties: PSOE, PP, VOX, CS, MP, UP - IU)?
 
 ```{r}
-#| eval: false
+
 # Obtaining the average estimated voting intention for each party
 voting_intention <- tbl(db, "surveys") %>%
   filter(date_elec >= '2008-01-01') %>% 
@@ -384,7 +509,7 @@ vote_share_real <- tbl(db, "vote_full") %>%
 ```
 
 ```{r}
-#| eval: false
+
 #Comparison(election 2019-11-01)
 vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
@@ -395,36 +520,82 @@ vote_share_real %>%
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2)
 ```
 
-7.  In which election were the polls most wrong?
+## Identifying the Election with the Greatest Polling Discrepancies
+
+7.In which election were the polls most wrong?
 
 ```{r}
-#| eval: false
-vote_share_real %>% 
+
+error_table <- vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
   left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
   mutate(poll_error = average_intention - national_share) %>% 
   ungroup() %>% 
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2) %>% 
   group_by(date_elec) %>% 
-  summarise(total_error = sum(abs(poll_error), na.rm = TRUE)) %>% 
-  slice_max(total_error, n =1)
+  summarise(total_error = sum(abs(poll_error), na.rm = TRUE)) 
+
+error_table |>  slice_max(total_error, n =1) 
+
 ```
 
-8.  How were the polls wrong in national parties (PSOE, PP, VOX, CS, MP, UP - IU)?
+### PLOT
 
 ```{r}
-#| eval: false
-vote_share_real %>% 
+ggplot(error_table, aes(x = as.character(date_elec), y = total_error)) +
+  geom_bar(stat = "identity", fill = "red") +
+  labs(title = "Total Error by Election Date",
+       x = "Election Date",
+       y = "Total Error") 
+```
+
+###TABLE
+
+```{r}
+error_table |>  slice_max(total_error, n =1) 
+```
+
+## Assessing Polling Inaccuracies for National Parties
+
+8.How were the polls wrong in national parties (PSOE, PP, VOX, CS, MP, UP - IU)?
+
+```{r}
+
+error_by_party <- vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
   left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
   mutate(poll_error = average_intention - national_share) %>% 
   ungroup() %>% 
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2) %>% 
-  filter(siglas_2 != "OTHER")
+  filter(siglas_2 != "OTHER") %>% 
+  group_by(siglas_2) %>%  
+  summarise(total_error = sum(abs(poll_error), na.rm = TRUE))
 ```
 
-9.  Which polling houses got it right the most and which ones deviated the most from the results?
+###PLOT
+
+```{r}
+ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
+  geom_bar(stat = "identity", fill = "red" ) +
+  labs(title = "Total Error by Party",
+       x = "Party",
+       y = "Total Error") 
+```
+
+## Identifying Top Performers and Those with Greatest Deviations
+
+9.Which polling houses got it right the most and which ones deviated the most from the results?
 
 ```{r}
 
 ```
+
+------------------------------------------------------------------------
+
+::: {style="text-align: center; font-size: xx-large; font-weight: bold;"}
+THE END
+:::
+
+::: {style="text-align: center; font-size: larger;"}
+<strong>We are open for any questions you guys have.</strong>
+:::
