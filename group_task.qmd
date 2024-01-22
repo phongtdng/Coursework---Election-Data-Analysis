@@ -360,6 +360,7 @@ first_psoe <- first_second %>%
 ```
 
 ```{r}
+
 ggplot(first_psoe, aes(y = reorder(elec_date, desc(elec_date)), 
                      x = count_second, fill = second)) +
   geom_bar(stat = "identity", position = "identity", width = 0.7) +
@@ -623,23 +624,8 @@ table_data <- vote_share_real %>%
   ungroup() %>% 
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2) %>%
   select(siglas_2, poll_error)
-table_data
 ```
-
 ::: {style="text-align: center"}
-**Vote Share Table**
-
-```{r}
-table_data
-```
-
-Both major parties, PP and PSOE, show minimal polling errors (0.08 and 0.59, respectively). This indicates that the polls were relatively accurate in predicting the election outcomes for these parties.
-
-The significant negative error of -11.75 for 'OTHER' indicates that smaller parties or independent candidates grouped in this category were collectively much more successful in the election than predicted by the polls.
-:::
-
-## Error of the polls visualization
-
 ```{r}
 # Custom colors for each party
 custom_colors <- c("PSOE" = "#f20400", "PP" = "#0157a1", "UP-IU" = "#663278",
@@ -663,6 +649,13 @@ ggplot(table_data, aes(x = siglas_2, y = poll_error, color = siglas_2)) +
   ) +
   guides(color = guide_legend(title = "Political Party"))
 ```
+:::
+
+::: {style="text-align: center"}
+Both major parties, PP and PSOE, show minimal polling errors (0.08 and 0.59, respectively). This indicates that the polls were relatively accurate in predicting the election outcomes for these parties.
+
+The significant negative error of -11.75 for 'OTHER' indicates that smaller parties or independent candidates grouped in this category were collectively much more successful in the election than predicted by the polls.
+:::
 
 ## Identifying the Election with the Greatest Polling Discrepancies
 
