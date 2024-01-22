@@ -12,7 +12,7 @@ editor: visual
 
 ## Required packages {visibility="hidden"}
 
-> Insert in the lower chunk the packages you will need
+Insert in the lower chunk the packages you will need
 
 ```{r}
 rm(list = ls()) 
@@ -373,7 +373,8 @@ first_pp <- first_second %>%
  filter(count_second == max(count_second))
 ```
 
-<<<<<<< HEAD
+### HEAD
+
 ```{r}
 ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)), 
                      x = count_second, fill = second)) +
@@ -394,8 +395,6 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
   ) 
 ```
 
-4.  Who benefits from low turnout?
-=======
 ## Impact of Voter Turnout on Election Outcomes
 
 4.Who benefits from low turnout?
@@ -414,13 +413,12 @@ tbl(db,"election_data_2") %>%
   head()
 ```
 
-<<<<<<< HEAD
+### HEAD
+
 ```{r}
 
 ```
 
-5.  How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
-=======
 ## Analyzing the Correlation Between Population Census and Voting Patterns
 
 5.How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
@@ -565,7 +563,7 @@ error_by_party <- vote_share_real %>%
   summarise(total_error = sum(abs(poll_error), na.rm = TRUE))
 ```
 
-###PLOT
+### PLOT
 
 ```{r}
 ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
