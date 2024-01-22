@@ -510,7 +510,8 @@ rural_winners %>%
   filter(percent == max(percent)) %>% 
   group_by(elec_date, siglas_2) %>% 
   summarise(win_count = n()) %>% 
-  arrange(elec_date,desc(win_count))
+  arrange(elec_date,desc(win_count)) |> 
+  filter(elec_date == "2008-03-01")
 ```
 
 ```{r}
@@ -519,7 +520,7 @@ rural_winners %>%
   group_by(elec_date, cod_mun) %>% 
   filter(percent == max(percent) & elec_date == "2008-03-01") %>% 
   ggplot(aes(x = percent, fill = siglas_2)) +
-  geom_histogram(binwidth = 1, show.legend = FALSE) +  
+  geom_histogram(binwidth = 1, show.legend = TRUE) +  
   labs(
     title = "Winning Times in Rural Zones per Party",
     subtitle = "Election Date: 2008-03-01",
@@ -530,10 +531,24 @@ rural_winners %>%
   theme_minimal() +
   theme(
     plot.title = element_text(size = 14, face = "bold"),
-    plot.subtitle = element_text(size = 12)
-  )
-
-
+    plot.subtitle = element_text(size = 12),
+    legend.text = element_text(size = 5),
+    legend.key.size = unit(5, "mm")
+  ) +
+  scale_fill_manual(values = c(
+    "PSOE" = "#f20400",
+    "PP" = "#0157a1",
+    "UP-IU" = "#663278",
+    "CS" = "#e9550d",
+    "EAJ" = "#00822a",
+    "VOX" = "#76b829", 
+    "MP" ="#00e1c5",
+    "CIU" = "#f68b22",
+    "EH-BILDU" = "#95c11f",
+    "BNG" = "#76b4de",
+    "COM" = "#8c3651"
+  )) 
+  
 ```
 
 # Analyzing Polling Errors: Accuracy and Discrepancies in Election Forecasts
@@ -669,7 +684,7 @@ ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
 
 ```
 
-### Table 
+### Table
 
 ```{r}
 print(error_by_party)
