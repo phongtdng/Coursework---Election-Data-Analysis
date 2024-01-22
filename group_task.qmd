@@ -607,6 +607,12 @@ ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
        y = "Total Error") 
 ```
 
+### Table 
+
+```{r}
+print(error_by_party)
+```
+
 ## Identifying Top Performers and Those with Greatest Deviations
 
 9.Which polling houses got it right the most and which ones deviated the most from the results?
