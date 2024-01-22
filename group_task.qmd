@@ -305,8 +305,8 @@ ggplot(winner_100k_summary) +
 ::: {style="text-align: center"}
 In larger municipalities, PP and PSOE predominantly emerge as the winning parties
 :::
-
-## Primary Runner-Up Parties to PSOE and PP in Elections
+---
+## Primary Runner-Up Parties to PSOE and PP in Elections: Bipartidism Who?
 
 3.Which party was the second when the first was the PSOE? And when the first was the PP?
 
@@ -356,7 +356,7 @@ first_psoe <- first_second %>%
  group_by(elec_date) %>% 
  filter(count_second == max(count_second))
 ```
-
+---
 ```{r}
 ggplot(first_psoe, aes(y = reorder(elec_date, desc(elec_date)), 
                      x = count_second, fill = second)) +
@@ -377,6 +377,10 @@ ggplot(first_psoe, aes(y = reorder(elec_date, desc(elec_date)),
   )  
   
 ```
+
+::: {style="text-align: center"}
+PP was the second party when PSOE was the winner in almost every election. UP-IU was the second party in the elections of 2015 after PSOE - 15M hitting. 
+:::
 
 ```{r}
 #| output: false
@@ -410,7 +414,7 @@ first_pp <- first_second %>%
  group_by(elec_date) %>% 
  filter(count_second == max(count_second))
 ```
-
+---
 ```{r}
 ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)), 
                      x = count_second, fill = second)) +
@@ -431,6 +435,11 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
   ) 
 ```
 
+
+::: {style="text-align: center"}
+PSOE was the second party when PP was the winner in almost every election. UP-IU was the second party in the elections of 2015 and 2016 after PP - 15M hitting. 
+:::
+---
 ## Impact of Voter Turnout on Election Outcomes
 
 4.Who benefits from low turnout?
@@ -448,6 +457,7 @@ lowturnout <- tbl(db,"election_data_2") %>%
   collect()
 ```
 
+---
 
 ```{r}
 lowturnout %>% 
@@ -495,7 +505,6 @@ coord_polar() +
 ))
 ```
 
-### Plot
 
 ## Analyzing the Correlation Between Population Census and Voting Patterns
 
