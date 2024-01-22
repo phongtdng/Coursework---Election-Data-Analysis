@@ -605,7 +605,7 @@ ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
        y = "Total Error") 
 ```
 
-### Table 
+### Table
 
 ```{r}
 print(error_by_party)
