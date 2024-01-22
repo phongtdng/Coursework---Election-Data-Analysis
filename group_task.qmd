@@ -495,17 +495,6 @@ coord_polar() +
 5.How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
 
 ```{r}
-#| output: false
-q5_df <- tbl(db, "vote_full") %>% 
-  left_join(tbl(db, "abbrev_2"), by = join_by("party" == "denominacion")) %>%
-  filter(siglas_2 != "OTHER") %>% 
-  left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
-  select(elec_date, cod_mun, censo_total, party, siglas_2, vote_count, valid_votes) %>% collect()
-
-cor(q5_df$censo_total, q5_df$valid_votes)
-```
-
-```{r}
 #Vote data frame of interested parties and in rural area (population <= 5000)
 #Criteria for rural based on DEMOGRAFÍA DE LA POBLACIÓN RURAL en 2020
 rural_winners <- tbl(db, "vote_full") %>% 
