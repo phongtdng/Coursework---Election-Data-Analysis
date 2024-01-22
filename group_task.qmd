@@ -469,7 +469,6 @@ cor(q5_df$censo_total, q5_df$valid_votes)
 ```
 
 ```{r}
-#| eval: false
 #Vote data frame of interested parties and in rural area (population <= 5000)
 #Criteria for rural based on DEMOGRAFÍA DE LA POBLACIÓN RURAL en 2020
 rural_winners <- tbl(db, "vote_full") %>% 
@@ -489,7 +488,6 @@ rural_winners %>%
 ```
 
 ```{r}
-#| eval: false
 #2008
 rural_winners %>% 
   group_by(elec_date, cod_mun) %>% 
