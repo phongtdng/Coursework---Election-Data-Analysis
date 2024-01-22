@@ -448,7 +448,6 @@ lowturnout <- tbl(db,"election_data_2") %>%
   collect()
 ```
 
-
 ```{r}
 lowturnout %>% 
   group_by(siglas_2) %>% 
