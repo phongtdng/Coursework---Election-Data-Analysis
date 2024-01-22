@@ -350,6 +350,8 @@ first_psoe <- first_second %>%
  filter(count_second == max(count_second))
 ```
 
+::: columns
+::: {.column width="50%"}
 ```{r}
 #First is PSOE
 
@@ -362,6 +364,22 @@ first_second %>%
   summarise(count = n()) %>% 
   arrange(elec_date, desc(count))
 ```
+:::
+
+::: {.column width="50%"}
+```{r}
+#First is PP
+#Count how many times got second place
+first_second %>% 
+  filter(siglas_2[1] == "PP") %>% 
+  filter(siglas_2 != "PP") %>% ungroup() %>% 
+  select(elec_date, party, siglas_2, percent) %>% 
+  group_by(elec_date, siglas_2) %>% 
+  summarise(count = n()) %>% 
+  arrange(elec_date, desc(count))
+```
+:::
+:::
 
 ------------------------------------------------------------------------
 
@@ -390,8 +408,6 @@ ggplot(first_psoe, aes(y = reorder(elec_date, desc(elec_date)),
 PP was the second party when PSOE was the winner in almost every election. UP-IU was the second party in the elections of 2015 after PSOE - 15M hitting.
 :::
 
-------------------------------------------------------------------------
-
 ```{r}
 #| output: false
 #First is PP
@@ -414,18 +430,6 @@ first_pp <- first_second %>%
             .groups = 'drop') %>% 
  group_by(elec_date) %>% 
  filter(count_second == max(count_second))
-```
-
-```{r}
-#First is PP
-#Count how many times got second place
-first_second %>% 
-  filter(siglas_2[1] == "PP") %>% 
-  filter(siglas_2 != "PP") %>% ungroup() %>% 
-  select(elec_date, party, siglas_2, percent) %>% 
-  group_by(elec_date, siglas_2) %>% 
-  summarise(count = n()) %>% 
-  arrange(elec_date, desc(count))
 ```
 
 ------------------------------------------------------------------------
@@ -729,7 +733,7 @@ error_by_party <- vote_share_real %>%
 ```
 
 ::: columns
-::: {.column width="70%"}
+::: {.column width="60%"}
 ```{r}
 ggplot(error_by_party, aes(x = reorder(siglas_2, total_error), y = total_error, fill = siglas_2)) +
   geom_bar(stat = "identity") +  
@@ -759,11 +763,10 @@ ggplot(error_by_party, aes(x = reorder(siglas_2, total_error), y = total_error, 
 ```
 :::
 
-::: {.column width="30%"}
+::: {.column width="40%"}
 ### Table
 
 ```{r}
-#| output: false
 print(error_by_party)
 ```
 :::
