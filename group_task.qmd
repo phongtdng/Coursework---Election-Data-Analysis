@@ -137,6 +137,8 @@ db <- DBI::dbConnect(SQLite(), "database.sqlite", extended_types = T)
 
 Due to the large size of the pivoted **`election_data`** dataframe (22 million rows), handling it became computationally intensive. To optimize efficiency, we migrated the data to a SQL database, enabling selective retrieval of necessary tables and reducing the load on the R environment.
 
+![](meme1.jpg){fig-align="center"}
+
 # The Analysis
 
 ## Distribution of national parties vs regional
