@@ -330,15 +330,6 @@ first_second <- tbl(db, "vote_full") %>%
 #| output: false
 #First is PSOE
 
-#Count how many times got second place
-first_second %>% 
-  filter(siglas_2[1] == "PSOE") %>% 
-  filter(siglas_2 != "PSOE") %>% ungroup() %>% 
-  select(elec_date, party, siglas_2, percent) %>% 
-  group_by(elec_date, siglas_2) %>% 
-  summarise(count = n()) %>% 
-  arrange(elec_date, desc(count))
-
 #Sum votes per election of second place party
 first_psoe <- first_second %>% 
   summarise(first = siglas_2[1],
@@ -358,6 +349,21 @@ first_psoe <- first_second %>%
  group_by(elec_date) %>% 
  filter(count_second == max(count_second))
 ```
+
+```{r}
+#First is PSOE
+
+#Count how many times got second place
+first_second %>% 
+  filter(siglas_2[1] == "PSOE") %>% 
+  filter(siglas_2 != "PSOE") %>% ungroup() %>% 
+  select(elec_date, party, siglas_2, percent) %>% 
+  group_by(elec_date, siglas_2) %>% 
+  summarise(count = n()) %>% 
+  arrange(elec_date, desc(count))
+```
+
+------------------------------------------------------------------------
 
 ```{r}
 ggplot(first_psoe, aes(y = reorder(elec_date, desc(elec_date)), 
@@ -389,14 +395,6 @@ PP was the second party when PSOE was the winner in almost every election. UP-IU
 ```{r}
 #| output: false
 #First is PP
-#Count how many times got second place
-first_second %>% 
-  filter(siglas_2[1] == "PP") %>% 
-  filter(siglas_2 != "PP") %>% ungroup() %>% 
-  select(elec_date, party, siglas_2, percent) %>% 
-  group_by(elec_date, siglas_2) %>% 
-  summarise(count = n()) %>% 
-  arrange(elec_date, desc(count))
 
 #Sum votes per election of second place party
 first_pp <- first_second %>% 
@@ -417,6 +415,20 @@ first_pp <- first_second %>%
  group_by(elec_date) %>% 
  filter(count_second == max(count_second))
 ```
+
+```{r}
+#First is PP
+#Count how many times got second place
+first_second %>% 
+  filter(siglas_2[1] == "PP") %>% 
+  filter(siglas_2 != "PP") %>% ungroup() %>% 
+  select(elec_date, party, siglas_2, percent) %>% 
+  group_by(elec_date, siglas_2) %>% 
+  summarise(count = n()) %>% 
+  arrange(elec_date, desc(count))
+```
+
+------------------------------------------------------------------------
 
 ```{r}
 ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)), 
@@ -718,7 +730,6 @@ error_by_party <- vote_share_real %>%
 
 ::: columns
 ::: {.column width="70%"}
-
 ```{r}
 ggplot(error_by_party, aes(x = reorder(siglas_2, total_error), y = total_error, fill = siglas_2)) +
   geom_bar(stat = "identity") +  
@@ -746,7 +757,8 @@ ggplot(error_by_party, aes(x = reorder(siglas_2, total_error), y = total_error, 
   ))
 
 ```
-::: 
+:::
+
 ::: {.column width="30%"}
 ### Table
 
@@ -754,8 +766,9 @@ ggplot(error_by_party, aes(x = reorder(siglas_2, total_error), y = total_error, 
 #| output: false
 print(error_by_party)
 ```
-::: 
 :::
+:::
+
 ## Identifying Top Performers and Those with Greatest Deviations
 
 9.Which polling houses got it right the most and which ones deviated the most from the results?
