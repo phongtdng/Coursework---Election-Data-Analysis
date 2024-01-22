@@ -22,9 +22,6 @@ library(RSQLite)
 library(DBI)
 library(lubridate)
 library(scales)
-<<<<<<< HEAD
-
-=======
 library(glue)
 ```
 
