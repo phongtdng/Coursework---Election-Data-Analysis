@@ -582,10 +582,10 @@ summarise_pollster_error <- pollster_result %>%
   summarise(avg_error = mean(abs(error), na.rm = TRUE))
   
 #Best pollster
-summarise_pollster %>% slice_min(avg_error)
+summarise_pollster_error %>% slice_min(avg_error)
 
 #Worst pollster
-summarise_pollster %>% slice_max(avg_error)
+summarise_pollster_error %>% slice_max(avg_error)
 ```
 
 ```{r}
