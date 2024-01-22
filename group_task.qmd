@@ -40,6 +40,7 @@ library(forcats)
 -   glue
 -   forcats
 -   ggplot2
+-   ggbeeswarm
 
 # About the data
 
@@ -379,6 +380,12 @@ ggplot(first_psoe, aes(y = reorder(elec_date, desc(elec_date)),
   
 ```
 
+::: {style="text-align: center"}
+PP was the second party when PSOE was the winner in almost every election. UP-IU was the second party in the elections of 2015 after PSOE - 15M hitting.
+:::
+
+------------------------------------------------------------------------
+
 ```{r}
 #| output: false
 #First is PP
@@ -430,6 +437,10 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
     panel.grid.major.y = element_line(color = "gray", linetype = "dashed", size = 0.3)
   ) 
 ```
+
+::: {style="text-align: center"}
+PSOE was the second party when PP was the winner in almost every election. UP-IU was the second party in the elections of 2015 and 2016 after PP - 15M hitting.
+:::
 
 ## Impact of Voter Turnout on Election Outcomes
 
@@ -499,6 +510,7 @@ coord_polar() +
 5.How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
 
 ```{r}
+#| output: false
 #Vote data frame of interested parties and in rural area (population <= 5000)
 #Criteria for rural based on DEMOGRAFÍA DE LA POBLACIÓN RURAL en 2020
 rural_winners <- tbl(db, "vote_full") %>% 
@@ -519,15 +531,14 @@ rural_winners %>%
 ```
 
 ```{r}
-#2008
 rural_winners %>% 
   group_by(elec_date, cod_mun) %>% 
-  filter(percent == max(percent) & elec_date == "2008-03-01") %>% 
+  filter(percent == max(percent)) %>% 
   ggplot(aes(x = percent, fill = siglas_2)) +
   geom_histogram(binwidth = 1, show.legend = TRUE) +  
   labs(
     title = "Winning Times in Rural Zones per Party",
-    subtitle = "Election Date: 2008-03-01",
+    subtitle = "Election Date: From 2008-03-01 to 2019-11-10",
     x = "Percentage of Votes",
     y = "Frequency",
     fill = "Party"
@@ -551,7 +562,7 @@ rural_winners %>%
     "EH-BILDU" = "#95c11f",
     "BNG" = "#76b4de",
     "COM" = "#8c3651"
-  )) 
+  ))
   
 ```
 
@@ -590,9 +601,8 @@ vote_share_real <- tbl(db, "vote_full") %>%
   collect() 
 ```
 
-**Vote Share Table**
-
 ```{r}
+#| output: false
 #Comparison(election 2019-11-01)
 vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
@@ -601,12 +611,10 @@ vote_share_real %>%
   mutate(poll_error = average_intention - national_share) %>% 
   ungroup() %>% 
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2)
-
 ```
 
 ```{r}
 #| output: false
-
 table_data <- vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
   filter(elec_date == '2019-11-01') %>% 
@@ -615,7 +623,20 @@ table_data <- vote_share_real %>%
   ungroup() %>% 
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2) %>%
   select(siglas_2, poll_error)
+table_data
 ```
+
+::: {style="text-align: center"}
+**Vote Share Table**
+
+```{r}
+table_data
+```
+
+Both major parties, PP and PSOE, show minimal polling errors (0.08 and 0.59, respectively). This indicates that the polls were relatively accurate in predicting the election outcomes for these parties.
+
+The significant negative error of -11.75 for 'OTHER' indicates that smaller parties or independent candidates grouped in this category were collectively much more successful in the election than predicted by the polls.
+:::
 
 ## Error of the polls visualization
 
@@ -723,10 +744,10 @@ ggplot(error_by_party, aes(x = reorder(siglas_2, total_error), y = total_error, 
 
 ```
 
-
 ### Table
 
 ```{r}
+#| output: false
 print(error_by_party)
 ```
 
