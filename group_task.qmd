@@ -170,7 +170,6 @@ In big municipalities, PP and PSOE win the majority of the time.
 3.  Which party was the second when the first was the PSOE? And when the first was the PP?
 
 ```{r}
-#| eval: false
 first_second <- tbl(db, "vote_full") %>% 
   left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
   filter(censo_total > 100000) %>% 
@@ -184,7 +183,7 @@ first_second <- tbl(db, "vote_full") %>%
 ```
 
 ```{r}
-#| eval: false
+
 #First is PSOE
 
 #Count how many times got second place
@@ -197,7 +196,7 @@ first_second %>%
   arrange(elec_date, desc(count))
 
 #Sum votes per election of second place party
-first_second %>% 
+first_psoe <- first_second %>% 
   summarise(first = siglas_2[1],
             second = siglas_2[2],
             
@@ -217,7 +216,28 @@ first_second %>%
 ```
 
 ```{r}
-#| eval: false
+ggplot(first_psoe, aes(y = reorder(elec_date, desc(elec_date)), 
+                     x = count_second, fill = second)) +
+  
+  geom_bar(stat = "identity", position = "identity", width = 0.7) +
+  scale_fill_manual(values = c("PP" = "#0157a1", "UP-IU" = "#663278")) +
+
+  labs(x="", y="", title= "Secon party when the winner is PSOE", subtitle = "total nº of votes per election in municipalites with more than 100.000 inhabitants") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 18, hjust = 0.5),
+    plot.subtitle = element_text(face = "italic", size = 14, hjust = 0.5),
+    legend.position = "bottom",
+    legend.title=element_blank(),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 10),
+    axis.title = element_blank(),
+    panel.grid.major.y = element_line(color = "gray", linetype = "dashed", size = 0.3)
+  ) 
+  
+```
+
+```{r}
 #First is PP
 
 #Count how many times got second place
@@ -230,7 +250,7 @@ first_second %>%
   arrange(elec_date, desc(count))
 
 #Sum votes per election of second place party
-first_second %>% 
+first_pp <- first_second %>% 
   summarise(first = siglas_2[1],
             second = siglas_2[2],
             
@@ -249,21 +269,44 @@ first_second %>%
  filter(count_second == max(count_second))
 ```
 
+```{r}
+ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)), 
+                     x = count_second, fill = second)) +
+  
+  geom_bar(stat = "identity", position = "identity", width = 0.7) +
+  scale_fill_manual(values = c("PSOE" = "#f20400", "UP-IU" = "#663278")) +
+  theme_minimal() +
+  labs(x="", y="", title= "Secon party when the winner is PP", subtitle = "total nº of votes per election in municipalites with more than 100.000 inhabitants") +
+   theme(
+    plot.title = element_text(face = "bold", size = 18, hjust = 0.5),
+    plot.subtitle = element_text(face = "italic", size = 14, hjust = 0.5),
+    legend.position = "bottom",
+    legend.title=element_blank(),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 10),
+    axis.title = element_blank(),
+    panel.grid.major.y = element_line(color = "gray", linetype = "dashed", size = 0.3)
+  ) 
+```
+
 4.  Who benefits from low turnout?
 
 ```{r}
-#| eval: false
 #Long run time, consider optimizing 
 tbl(db,"election_data_2") %>% 
   left_join(tbl(db, "abbrev_2"),by = join_by("party" == "denominacion")) %>% 
   left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
   group_by(elec_date, cod_mun) %>% 
   mutate(participation_pcg = participacion_2/censo_total * 100) %>% 
-  select(elec_date, cod_mun, party, siglas_2, participacion_2, vote_count, participation_pcg, censo_total) %>% 
+  select(elec_date, cod_mun, party, siglas_2, participacion_2, vote_count,    participation_pcg, censo_total) %>% 
   filter(participation_pcg < 30) %>% 
   arrange(participation_pcg) %>% 
   filter(vote_count == max(vote_count)) %>% 
   head()
+```
+
+```{r}
+
 ```
 
 5.  How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
