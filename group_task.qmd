@@ -576,7 +576,7 @@ correct_estimates %>% slice_min(correct_guesses)
 ```
 
 ```{r}
-summarise_pollster <- pollster_result %>% 
+summarise_pollster_error <- pollster_result %>% 
   select(date_elec, pollster, error) %>% 
   group_by(pollster) %>% 
   summarise(avg_error = mean(abs(error), na.rm = TRUE))
@@ -586,6 +586,13 @@ summarise_pollster %>% slice_min(avg_error)
 
 #Worst pollster
 summarise_pollster %>% slice_max(avg_error)
+```
+
+```{r}
+#error plot
+ggplot(summarise_pollster_error, aes(y = avg_error, x = pollster)) +
+  geom_point() +
+  theme(axis.text.x = element_text(size = 3))
 ```
 
 ------------------------------------------------------------------------
