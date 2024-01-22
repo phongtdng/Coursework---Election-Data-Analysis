@@ -695,6 +695,9 @@ error_by_party <- vote_share_real %>%
   summarise(total_error = sum(abs(poll_error), na.rm = TRUE))
 ```
 
+::: columns
+::: {.column width="70%"}
+
 ```{r}
 ggplot(error_by_party, aes(x = reorder(siglas_2, total_error), y = total_error, fill = siglas_2)) +
   geom_bar(stat = "identity") +  
@@ -723,12 +726,16 @@ ggplot(error_by_party, aes(x = reorder(siglas_2, total_error), y = total_error, 
 
 ```
 
-
+:::
+::: {.column width="30%"}
 ### Table
 
 ```{r}
 print(error_by_party)
 ```
+
+:::
+:::
 
 ## Identifying Top Performers and Those with Greatest Deviations
 
