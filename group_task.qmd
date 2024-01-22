@@ -1,8 +1,9 @@
 ---
 title: "Group Task"
-author: "Valeria Contreras-Phong Duong-Jieun Park-Ana Pérez-Sofia Villamil"
+author: "Valeria Contreras - Phong Duong - Jieun Park - Ana Pérez - Sofia Villamil"
 format:
   revealjs:
+    slide-number: "c/t"
     theme: moon
     incremental: true
     width: 1920
@@ -24,7 +25,7 @@ library(lubridate)
 library(scales)
 library(glue)
 library(ggplot2)
-
+library(ggbeeswarm)
 ```
 
 ## Required packages
@@ -160,9 +161,9 @@ if(!dbListTables(db) %>% str_detect("vote_sum") %>% any()) {
 ```
 
 ::: columns
-::: {.column width="50%" style="align: center"}
+::: {.column width="70%"}
 ```{r}
-#| fig-height: 7
+#| fig-height: 5
 #| fig-width : 13
 plot1_data <- tbl(db, "vote_sum") 
 ggplot(plot1_data, aes(x = elec_date, y = vote_total/10^6, fill = nat_reg)) +
@@ -186,7 +187,7 @@ ggplot(plot1_data, aes(x = elec_date, y = vote_total/10^6, fill = nat_reg)) +
 ```
 :::
 
-::: {.column width="30%" style="align: center"}
+::: {.column width="30%"}
 ### Table
 
 ```{r}
@@ -306,7 +307,6 @@ In larger municipalities, PP and PSOE predominantly emerge as the winning partie
 3.Which party was the second when the first was the PSOE? And when the first was the PP?
 
 ```{r}
-
 first_second <- tbl(db, "vote_full") %>% 
   left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
   filter(censo_total > 100000) %>% 
@@ -375,7 +375,6 @@ ggplot(first_psoe, aes(y = reorder(elec_date, desc(elec_date)),
 
 ```{r}
 #| output: false
-
 #First is PP
 #Count how many times got second place
 first_second %>% 
@@ -431,6 +430,7 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
 4.Who benefits from low turnout?
 
 ```{r}
+#| output: false
 tbl(db,"election_data_2")
 
 #Long run time, consider optimizing 
@@ -487,8 +487,6 @@ coord_polar() +
        sep = "\n"
 ))
 ```
-
-### Plot
 
 ## Analyzing the Correlation Between Population Census and Voting Patterns
 
@@ -571,8 +569,9 @@ vote_share_real <- tbl(db, "vote_full") %>%
   collect() 
 ```
 
+**Vote Share Table**
+
 ```{r}
-#| output: false
 #Comparison(election 2019-11-01)
 vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
@@ -581,11 +580,12 @@ vote_share_real %>%
   mutate(poll_error = average_intention - national_share) %>% 
   ungroup() %>% 
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2)
+
 ```
 
-### Table
-
 ```{r}
+#| output: false
+
 table_data <- vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
   filter(elec_date == '2019-11-01') %>% 
@@ -594,8 +594,32 @@ table_data <- vote_share_real %>%
   ungroup() %>% 
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2) %>%
   select(siglas_2, poll_error)
-table_data
+```
 
+## Error of the polls visualization
+
+```{r}
+# Custom colors for each party
+custom_colors <- c("PSOE" = "#f20400", "PP" = "#0157a1", "UP-IU" = "#663278",
+                   "CS" = "#e9550d", "VOX" = "#76b829", "MP" = "#00e1c5", 
+                   "OTHER" = "brown")
+
+ggplot(table_data, aes(x = siglas_2, y = poll_error, color = siglas_2)) +
+  geom_beeswarm(size = 3) +  
+  scale_color_manual(values = custom_colors) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  labs(
+    title = "Polling Error by Political Party",
+    subtitle = "Beeswarm plot showing individual polling errors",
+    x = "Party",
+    y = "Polling Error"
+  ) +
+  theme(
+    legend.position = NULL,
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12)
+  ) +
+  guides(color = guide_legend(title = "Political Party"))
 ```
 
 ## Identifying the Election with the Greatest Polling Discrepancies
@@ -669,7 +693,7 @@ ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
 
 ```
 
-### Table 
+### Table
 
 ```{r}
 print(error_by_party)
@@ -741,6 +765,7 @@ summarise_pollster_error %>% slice_max(avg_error)
 ```
 
 ```{r}
+
 ggplot(summarise_pollster_error, aes(x = reorder(pollster, avg_error), y = avg_error)) +
   geom_point(color = "#87CEEB") +  
   theme_minimal(base_size = 10) +
