@@ -431,17 +431,61 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
 4.Who benefits from low turnout?
 
 ```{r}
-#| output: false
 tbl(db,"election_data_2") %>% 
+
+#Long run time, consider optimizing 
+lowturnout <- tbl(db,"election_data_2") %>% 
   left_join(tbl(db, "abbrev_2"),by = join_by("party" == "denominacion")) %>% 
   left_join(mun_pop_2, by = join_by("cod_mun", "elec_date" == "date")) %>% 
   group_by(elec_date, cod_mun) %>% 
   mutate(participation_pcg = participacion_2/censo_total * 100) %>% 
-  select(elec_date, cod_mun, party, siglas_2, participacion_2, vote_count,    participation_pcg, censo_total) %>% 
+  select(elec_date, cod_mun, party, siglas_2, participacion_2, vote_count,  participation_pcg, censo_total) %>% 
   filter(participation_pcg < 30) %>% 
   arrange(participation_pcg) %>% 
-  filter(vote_count == max(vote_count)) %>% 
-  head()
+  filter(vote_count == max(vote_count)) 
+```
+
+```{r}
+library(forcats)
+ggplot(lowturnout, aes(x = fct_reorder(siglas_2,vote_count), 
+                       y = vote_count, fill = siglas_2)) +
+  
+  geom_bar(stat = "identity", na.rm = TRUE) +
+  scale_fill_manual(values = c("PP" ="#0157a1","PSOE" = "#f20400","EAJ" = "#00822a"))+
+                    
+  theme_minimal()+
+
+coord_polar() +
+  annotate( x = 11.5, y = 1100, label = "1000",
+            geom = "text", color = "gray12",size= 3, na.rm = TRUE) +
+ 
+   annotate( x = 11.5,y = 2100, label = "2000", 
+             geom = "text", color = "gray12", size=3, na.rm = TRUE) +
+ 
+   annotate( x = 11.5, y =3100, label = "3000",
+             geom = "text", color = "gray12", size=3, na.rm = TRUE) +
+  
+  annotate( x = 11.7,  y =4100, label = "4000", 
+            geom = "text", color = "gray12", size=3, na.rm = TRUE ) +
+  
+ 
+   scale_y_continuous(
+    limits = c(-1500, 3500),
+    expand = c(0, 0),
+    breaks = c(0, 1000, 2000, 3000))+
+   
+  theme(axis.text.y = element_blank(), 
+        axis.text.x = element_text(color = "gray12", size = 8), 
+        legend.position = "none", 
+        legend.title = element_blank(), 
+        plot.title = element_text(face="bold")) +
+  
+  labs( x="", y="", title = "\nTotal votes for each party in municipalities with less than 30% of turnout", 
+            subtitle = paste(
+      "\nPP and PSOE still the most benefited parties when low turnout,",
+      "EAJ-PNV gains votes from low turnout.\n",
+       sep = "\n"
+))
 ```
 
 ### Plot
@@ -462,8 +506,6 @@ cor(q5_df$censo_total, q5_df$valid_votes)
 ```
 
 ```{r}
-#| output: false
-
 #Vote data frame of interested parties and in rural area (population <= 5000)
 #Criteria for rural based on DEMOGRAFÍA DE LA POBLACIÓN RURAL en 2020
 rural_winners <- tbl(db, "vote_full") %>% 
@@ -483,10 +525,10 @@ rural_winners %>%
 ```
 
 ```{r}
-
-rural_winners %>%
-  group_by(elec_date, cod_mun) %>%
-  filter(percent == max(percent) & elec_date == "2008-03-01") %>%
+#2008
+rural_winners %>% 
+  group_by(elec_date, cod_mun) %>% 
+  filter(percent == max(percent) & elec_date == "2008-03-01") %>% 
   ggplot(aes(x = percent, fill = siglas_2)) +
   geom_histogram(binwidth = 1, show.legend = FALSE) +  
   labs(
@@ -636,6 +678,12 @@ ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
   ) +
   scale_y_continuous(expand = expansion(mult = c(0, .1))) 
 
+```
+
+### Table 
+
+```{r}
+print(error_by_party)
 ```
 
 ## Identifying Top Performers and Those with Greatest Deviations
