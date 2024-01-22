@@ -531,7 +531,68 @@ ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
 9.Which polling houses got it right the most and which ones deviated the most from the results?
 
 ```{r}
+pollster_estimate <- tbl(db, "surveys") %>%
+  filter(date_elec >= '2008-01-01') %>% 
+  select(siglas, pollster, date_elec, field_date_from, field_date_to, 
+         estimated_voting_intention) %>%
+  mutate(siglas_imp = case_when(siglas == "PSOE" ~ "PSOE",
+                                siglas == "PP" ~ "PP",
+                                siglas == "CS" ~ "CS",
+                                siglas %in% c("PODEMOS", "UP", "IU") ~ "UP-IU",
+                                siglas == "MP" ~ "MP",
+                                siglas == "VOX" ~ "VOX",
+                                TRUE ~ "OTHER"), .after = "siglas") %>% 
+  group_by(date_elec, pollster, siglas_imp) %>%
+  summarise(average_intention = mean(estimated_voting_intention)) %>% 
+  collect() %>% 
+  mutate(winner_estimated = siglas_imp[which.max(average_intention)])
 
+
+pollster_result <- pollster_estimate %>% 
+  left_join(vote_share_real %>%
+              mutate(elec_date = ymd(elec_date),
+                     winner = siglas_2[which.max(national_share)]), 
+            by = join_by(closest("date_elec" >= "elec_date"),
+                         "siglas_imp" == "siglas_2"), 
+            keep = TRUE) %>% 
+  mutate(correct_guess = ifelse(winner_estimated == winner, 1,0),
+         error = average_intention - national_share) %>% 
+  select(-elec_date)
+```
+
+```{r}
+#How many times pollsters correctly estimated winning party
+correct_estimates <- pollster_result %>% 
+  select(date_elec, pollster, correct_guess) %>% 
+  distinct() %>% 
+  group_by(pollster) %>% 
+  summarise(correct_guesses = sum(correct_guess))
+
+#top pollsters
+correct_estimates %>% slice_max(correct_guesses)
+
+#worst pollsters
+correct_estimates %>% slice_min(correct_guesses)
+```
+
+```{r}
+summarise_pollster_error <- pollster_result %>% 
+  select(date_elec, pollster, error) %>% 
+  group_by(pollster) %>% 
+  summarise(avg_error = mean(abs(error), na.rm = TRUE))
+  
+#Best pollster
+summarise_pollster %>% slice_min(avg_error)
+
+#Worst pollster
+summarise_pollster %>% slice_max(avg_error)
+```
+
+```{r}
+#error plot
+ggplot(summarise_pollster_error, aes(y = avg_error, x = pollster)) +
+  geom_point() +
+  theme(axis.text.x = element_text(size = 3))
 ```
 
 ------------------------------------------------------------------------
