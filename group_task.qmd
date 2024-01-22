@@ -424,7 +424,7 @@ rural_winners %>%
 6.How to calibrate the error of the polls (remember that the polls are voting intentions at national level - national parties: PSOE, PP, VOX, CS, MP, UP - IU)?
 
 ```{r}
-#| eval: false
+
 # Obtaining the average estimated voting intention for each party
 voting_intention <- tbl(db, "surveys") %>%
   filter(date_elec >= '2008-01-01') %>% 
@@ -453,7 +453,7 @@ vote_share_real <- tbl(db, "vote_full") %>%
 ```
 
 ```{r}
-#| eval: false
+
 #Comparison(election 2019-11-01)
 vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
@@ -469,16 +469,30 @@ vote_share_real %>%
 7.In which election were the polls most wrong?
 
 ```{r}
-#| eval: false
-vote_share_real %>% 
+
+error_table <- vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
   left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
   mutate(poll_error = average_intention - national_share) %>% 
   ungroup() %>% 
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2) %>% 
   group_by(date_elec) %>% 
-  summarise(total_error = sum(abs(poll_error), na.rm = TRUE)) %>% 
-  slice_max(total_error, n =1)
+  summarise(total_error = sum(abs(poll_error), na.rm = TRUE)) 
+
+error_table |>  slice_max(total_error, n =1) 
+
+```
+### PLOT
+```{r}
+ggplot(error_table, aes(x = date_elec, y = total_error)) +
+  geom_bar(stat = "identity", fill = "red") +
+  labs(title = "Total Error by Election Date",
+       x = "Election Date",
+       y = "Total Error") 
+```
+###TABLE 
+```{r}
+error_table |>  slice_max(total_error, n =1) 
 ```
 
 ## Assessing Polling Inaccuracies for National Parties
@@ -486,14 +500,25 @@ vote_share_real %>%
 8.How were the polls wrong in national parties (PSOE, PP, VOX, CS, MP, UP - IU)?
 
 ```{r}
-#| eval: false
-vote_share_real %>% 
+
+error_by_party <- vote_share_real %>% 
   mutate(elec_date = ymd(elec_date)) %>% 
   left_join(voting_intention, by = join_by(closest("elec_date" <= "date_elec"),"siglas_2" == "siglas_imp")) %>% 
   mutate(poll_error = average_intention - national_share) %>% 
   ungroup() %>% 
   select(-elec_date) %>% relocate(date_elec, .before = siglas_2) %>% 
-  filter(siglas_2 != "OTHER")
+  filter(siglas_2 != "OTHER") %>% 
+  group_by(siglas_2) %>%  
+  summarise(total_error = sum(abs(poll_error), na.rm = TRUE))
+```
+###PLOT 
+
+```{r}
+ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
+  geom_bar(stat = "identity", fill = "red" ) +
+  labs(title = "Total Error by Party",
+       x = "Party",
+       y = "Total Error") 
 ```
 
 ## Identifying Top Performers and Those with Greatest Deviations
