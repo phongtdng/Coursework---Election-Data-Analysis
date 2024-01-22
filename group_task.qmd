@@ -23,11 +23,9 @@ library(DBI)
 library(lubridate)
 library(scales)
 <<<<<<< HEAD
-#fakelibrary
-#ana
+
 =======
 library(glue)
->>>>>>> e0687728d8adfee1b9efad252c7f56b04088119c
 ```
 
 ## Required packages
@@ -404,7 +402,6 @@ ggplot(first_pp, aes(y = reorder(elec_date, desc(elec_date)),
 ## Impact of Voter Turnout on Election Outcomes
 
 4.Who benefits from low turnout?
->>>>>>> e0687728d8adfee1b9efad252c7f56b04088119c
 
 ```{r}
 #Long run time, consider optimizing 
@@ -430,7 +427,6 @@ tbl(db,"election_data_2") %>%
 ## Analyzing the Correlation Between Population Census and Voting Patterns
 
 5.How to analyze the relationship between census and vote? Is it true that certain parties win in rural areas?
->>>>>>> e0687728d8adfee1b9efad252c7f56b04088119c
 
 ```{r}
 #| eval: false
