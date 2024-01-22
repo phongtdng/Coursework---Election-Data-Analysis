@@ -656,8 +656,10 @@ error_by_party <- vote_share_real %>%
 ```
 
 ```{r}
-ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
-  geom_bar(stat = "identity", fill = "#87CEEB" ) +  
+library(ggplot2)
+
+ggplot(error_by_party, aes(x = reorder(siglas_2, total_error), y = total_error, fill = siglas_2)) +
+  geom_bar(stat = "identity") +  
   labs(
     title = "Total Error by Party",
     x = "Party",
@@ -670,14 +672,17 @@ ggplot(error_by_party, aes(x = siglas_2, y = total_error)) +
     axis.text.y = element_text(size = 10),                
     legend.position = "none"                              
   ) +
-  scale_y_continuous(expand = expansion(mult = c(0, .1))) 
+  scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+  scale_fill_manual(values = c(
+    "PSOE" = "#f20400",
+    "PP" = "#0157a1",
+    "UP-IU" = "#663278",
+    "CS" = "#e9550d",
+    "EAJ" = "#00822a",
+    "VOX" = "#76b829", 
+    "MP" ="#00e1c5"
+  ))
 
-```
-
-### Table 
-
-```{r}
-print(error_by_party)
 ```
 
 ## Identifying Top Performers and Those with Greatest Deviations
